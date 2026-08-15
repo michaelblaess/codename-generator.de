@@ -1,5 +1,10 @@
 ---
 import '../styles/global.css';
+// Die Schrift laeuft ueber Vite, nicht ueber public/. Nur so traegt die URL den
+// Basispfad - ein url(/fonts/...) in der CSS-Datei laeuft unter
+// /codename-generator.de/ ins Leere und die Seite faellt still auf Consolas
+// zurueck.
+import plexMono from '../assets/fonts/plexmono.woff2';
 
 interface Props {
   title: string;
@@ -28,11 +33,11 @@ const favicon = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/favicon.svg`;
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
     <meta name="twitter:card" content="summary" />
-    <meta name="theme-color" content="#0a0e0a" />
+    <meta name="theme-color" content="#23201c" />
+    <link rel="preload" href={plexMono} as="font" type="font/woff2" crossorigin />
+    <style is:inline set:html={`@font-face{font-family:PlexMono;src:url("${plexMono}") format("woff2");font-weight:400 600;font-display:swap}`}></style>
   </head>
-  <body class="crt-scanlines font-mono">
-    <div class="mx-auto max-w-5xl px-4 py-8">
-      <slot />
-    </div>
+  <body class="font-mono">
+    <slot />
   </body>
 </html>

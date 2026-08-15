@@ -3,89 +3,240 @@
 @tailwind utilities;
 
 /*
- * Phosphor-Terminal. Bernstein auf fast schwarz, weil das der Look alter
- * Monochrom-Monitore ist und die Codenamen wie Fernschreiber-Ausgabe wirken
- * sollen.
+ * Fernschreiber. Die Seite ist eine Bahn Endlospapier, die aus einer Maschine
+ * laeuft: Traktorlochung an beiden Raendern, Greenbar-Zebra fuer die Zeilen,
+ * Trommeldruck in warmem Schwarz. Das Farbband ist die einzige Farbe - es
+ * markiert genau die Dinge, die die Maschine hervorhebt.
  */
 :root {
-  --crt: #0a0e0a;
-  --panel: #101610;
-  --rule: #1f2b1f;
-  --phosphor: #7dff8a;
-  --phosphor-dim: #2f6b36;
-  --amber: #ffb648;
-  --scan: rgba(0, 0, 0, 0.35);
-}
-
-/* Bernstein-Variante fuer alle, die Gruen nicht moegen. */
-:root[data-look='amber'] {
-  --phosphor: #ffc457;
-  --phosphor-dim: #7a5418;
+  --papier: #f0ebe0;
+  --greenbar: #dfe7d7;
+  --druck: #1c1815;
+  --durchschlag: #7a7268;
+  --farbband: #b62b22;
+  --gehaeuse: #23201c;
+  --lochung: #cfc6b6;
+  --zeile: 2.55rem;
 }
 
 html {
-  background: var(--crt);
-  color: var(--phosphor);
-  font-family: ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace;
-  color-scheme: dark;
+  background: var(--gehaeuse);
+  color: var(--druck);
+  font-family: PlexMono, Consolas, monospace;
+  color-scheme: light;
 }
 
 body {
   margin: 0;
-  min-height: 100vh;
+  /* Der Untergrund ist das Maschinengehaeuse, das Papier liegt darauf. */
   background:
-    radial-gradient(ellipse at 50% 0%, rgba(125, 255, 138, 0.06), transparent 60%),
-    var(--crt);
+    radial-gradient(ellipse at 50% -10%, #322d27, transparent 70%),
+    var(--gehaeuse);
 }
 
-/* Scanlines. Rein dekorativ, deshalb pointer-events aus. */
-.crt-scanlines::before {
+/* --- Papierbahn ----------------------------------------------------------
+ * Die Lochung sitzt als wiederholter Radialverlauf in den Randspalten. Sie
+ * gehoert zum Papier, nicht zu einem Rahmen - deshalb laeuft sie ueber die
+ * ganze Hoehe durch.
+ */
+.bahn {
+  position: relative;
+  background: var(--papier);
+  padding-inline: 2.9rem;
+  box-shadow: 0 0 0 1px #d8cfc0, 0 22px 60px rgb(0 0 0 / 45%);
+}
+
+.bahn::before,
+.bahn::after {
   content: '';
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 50;
-  background: repeating-linear-gradient(
-    to bottom,
-    transparent 0 2px,
-    var(--scan) 2px 3px
-  );
-  opacity: 0.5;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2.9rem;
+  background-image: radial-gradient(circle at 50% 50%, var(--lochung) 0 0.28rem, transparent 0.29rem);
+  background-size: 100% 1.35rem;
+  border-inline: 1px dashed #d5ccbc;
 }
 
-.glow {
-  text-shadow: 0 0 6px var(--phosphor-dim);
+.bahn::before {
+  left: 0;
+  border-left: none;
 }
 
-/* Blinkender Cursor am Ende der Kopfzeile. */
-.cursor::after {
-  content: '_';
-  animation: blink 1.1s steps(1) infinite;
+.bahn::after {
+  right: 0;
+  border-right: none;
 }
 
-@keyframes blink {
-  50% { opacity: 0; }
+/* Abrisskante oben und unten: die gezackte Perforation zwischen zwei Blaettern. */
+.abriss {
+  height: 0.75rem;
+  background:
+    linear-gradient(45deg, transparent 48%, #d5ccbc 49% 51%, transparent 52%) repeat-x,
+    var(--papier);
+  background-size: 0.75rem 0.75rem;
+  opacity: 0.85;
 }
 
-/* Wer Bewegung abbestellt hat, bekommt keine - Effekte und Blinken aus. */
-@media (prefers-reduced-motion: reduce) {
-  .cursor::after { animation: none; }
-  .crt-scanlines::before { display: none; }
+/* --- Greenbar ------------------------------------------------------------
+ * Endlospapier fuer Listendruck trug blassgruene Baender ueber je zwei Zeilen.
+ * Hier traegt jede zweite Zeile die Bahn - das fuehrt das Auge durch 40 Namen.
+ */
+.greenbar > *:nth-child(even) {
+  background: var(--greenbar);
 }
 
-/* Formularelemente im Terminal-Look, ohne Browser-Eigenheiten. */
-select,
+/* --- Bedienfeld ----------------------------------------------------------
+ * Tasten statt Auswahllisten: eine Maschine hat Tasten, die einrasten.
+ */
+.taste {
+  border: 1px solid #cec5b5;
+  background: #e7e1d5;
+  color: var(--durchschlag);
+  padding: 0.3rem 0.6rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  box-shadow: inset 0 -2px 0 #d3cabb;
+  transition: transform 0.06s ease-out;
+}
+
+.taste:hover {
+  color: var(--druck);
+}
+
+.taste[aria-pressed='true'] {
+  background: var(--druck);
+  border-color: var(--druck);
+  color: var(--papier);
+  box-shadow: inset 0 2px 0 #000;
+  transform: translateY(1px);
+}
+
+.taste:focus-visible,
+.zeile:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--farbband);
+  outline-offset: 2px;
+}
+
+/* --- Regler --------------------------------------------------------------
+ * Kein Browser-Default: eine Schiene mit eckigem Griff, wie ein Schieber am
+ * Geraet.
+ */
 input[type='range'] {
-  accent-color: var(--phosphor);
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 1.1rem;
+  background: transparent;
+  cursor: pointer;
 }
 
-select {
-  background: var(--panel);
-  color: var(--phosphor);
-  border: 1px solid var(--rule);
+input[type='range']::-webkit-slider-runnable-track {
+  height: 0.35rem;
+  background: repeating-linear-gradient(90deg, #cdc4b4 0 2px, #e0d9cb 2px 6px);
+  border: 1px solid #c3b9a8;
+}
+
+input[type='range']::-moz-range-track {
+  height: 0.35rem;
+  background: repeating-linear-gradient(90deg, #cdc4b4 0 2px, #e0d9cb 2px 6px);
+  border: 1px solid #c3b9a8;
+}
+
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 0.7rem;
+  height: 1.1rem;
+  margin-top: -0.42rem;
+  background: var(--druck);
+  border: none;
+  box-shadow: inset 0 0 0 2px #6b6259;
+}
+
+input[type='range']::-moz-range-thumb {
+  width: 0.7rem;
+  height: 1.1rem;
+  border-radius: 0;
+  background: var(--druck);
+  border: none;
+  box-shadow: inset 0 0 0 2px #6b6259;
+}
+
+/* --- Themenliste ---------------------------------------------------------
+ * Eigene Bildlaufleiste, damit die Browser-Leiste nicht das Papier zerschneidet.
+ */
+.kanal {
+  scrollbar-width: thin;
+  scrollbar-color: #b9af9e transparent;
+}
+
+.kanal::-webkit-scrollbar {
+  width: 0.5rem;
+}
+
+.kanal::-webkit-scrollbar-thumb {
+  background: #b9af9e;
+}
+
+.kanal::-webkit-scrollbar-track {
+  background: #e2dbcd;
+}
+
+/* --- Kleinkram -----------------------------------------------------------*/
+
+/* Der Druckkopf blinkt am Ende der Kopfzeile. Als Kasten gezeichnet, nicht als
+ * Blockzeichen - PlexMono traegt die Blockglyphen nicht und der Browser holt
+ * sie sonst aus einer fremden Schrift (gemessen: 0.92 statt 1.00 Dickte). */
+.kopf-cursor::after {
+  content: '';
+  display: inline-block;
+  width: 0.42em;
+  height: 1em;
+  margin-left: 0.15em;
+  vertical-align: -0.12em;
+  background: var(--farbband);
+  animation: blinken 1.05s steps(1) infinite;
+}
+
+@keyframes blinken {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* Der Druckkopf: ein Balken, der auf der gerade entstehenden Zeile steht. */
+.druckkopf {
+  width: 0.55rem;
+  height: 1.1rem;
+  align-self: center;
+  background: var(--farbband);
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 25%);
+}
+
+/* Der Papiervorschub: ein frischer Stapel rutscht eine Zeile hoch. */
+.vorschub {
+  animation: vorschub 0.42s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+@keyframes vorschub {
+  from {
+    transform: translateY(calc(var(--zeile) * -0.6));
+  }
+  to {
+    transform: translateY(0);
+  }
 }
 
 ::selection {
-  background: var(--phosphor-dim);
-  color: #fff;
+  background: var(--farbband);
+  color: var(--papier);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kopf-cursor::after,
+  .vorschub {
+    animation: none;
+  }
 }

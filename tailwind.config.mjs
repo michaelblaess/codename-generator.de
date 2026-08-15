@@ -4,22 +4,22 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Phosphor-Terminal: Hintergrund fast schwarz, Schrift Bernstein/Gruen.
-        crt: 'var(--crt)',
-        phosphor: 'var(--phosphor)',
-        phosphorDim: 'var(--phosphor-dim)',
-        amber: 'var(--amber)',
-        scan: 'var(--scan)',
-        panel: 'var(--panel)',
-        rule: 'var(--rule)',
+        // Endlospapier fuer Nadeldrucker: warmes Weiss mit blassgruenen Bahnen
+        // (Greenbar), Trommeldruck in warmem Schwarz, ein einziger Akzent aus
+        // dem Farbband.
+        papier: 'var(--papier)',
+        greenbar: 'var(--greenbar)',
+        druck: 'var(--druck)',
+        durchschlag: 'var(--durchschlag)',
+        farbband: 'var(--farbband)',
+        gehaeuse: 'var(--gehaeuse)',
+        lochung: 'var(--lochung)',
       },
       fontFamily: {
-        // Consolas/DejaVu/Menlo zuerst: die Retro-Effekte brauchen die
-        // Blockglyphen (Schattierungszeichen), sonst zerfaellt die Spaltenbreite.
-        mono: ['Consolas', 'DejaVu Sans Mono', 'Menlo', 'ui-monospace', 'monospace'],
+        mono: ['PlexMono', 'Consolas', 'DejaVu Sans Mono', 'monospace'],
       },
-      boxShadow: {
-        glow: '0 0 12px var(--phosphor-dim)',
+      letterSpacing: {
+        telex: '0.32em',
       },
     },
   },

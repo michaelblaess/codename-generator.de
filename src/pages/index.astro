@@ -11,52 +11,59 @@ const wordCount = list.reduce((sum, t) => sum + t.words.length, 0);
   title="Codename Generator - project codenames from curated themes"
   description={`Generate project codenames from ${list.length} curated themes and ${wordCount} words, in English or German, with optional phonetic mutation.`}
 >
-  <header class="mb-8 border-b border-rule pb-6">
-    <h1 class="text-2xl tracking-[0.3em] text-phosphor glow sm:text-3xl">
-      CODENAME<span class="text-amber">·</span>GENERATOR<span class="cursor"></span>
-    </h1>
-    <p class="mt-3 max-w-2xl text-sm text-phosphor/70">
-      {list.length} curated themes, {wordCount} words, English and German. Pick a theme, get a
-      batch of names, copy what fits. Everything runs in your browser - nothing is sent anywhere.
-    </p>
-  </header>
+  <div class="mx-auto max-w-5xl px-3 py-6 sm:py-10">
+    <div class="abriss"></div>
 
-  <Generator client:only="react" />
+    <div class="bahn py-8">
+      <!-- Kopf des Fernschreibers: Absender, Betreff, Laufzettel. -->
+      <header class="mb-8">
+        <p class="text-[0.66rem] tracking-telex text-durchschlag">
+          MICHAEL BLAESS · WERKZEUG NR. 7
+        </p>
+        <h1 class="mt-2 text-3xl font-semibold leading-none tracking-tight sm:text-[2.7rem]">
+          CODENAME GENERATOR
+        </h1>
+        <p class="mt-4 max-w-[46rem] text-[0.9rem] leading-relaxed text-druck">
+          Ein Projekt braucht einen Namen, bevor es einen Ordner braucht. Diese Maschine
+          druckt {list.length} Themen und {wordCount} Wörter zu Namenspaaren zusammen, auf
+          Englisch oder Deutsch. Alles läuft in deinem Browser, nichts wird gesendet.
+        </p>
+      </header>
 
-  <section class="mt-12 grid gap-6 border-t border-rule pt-6 text-sm text-phosphor/70 sm:grid-cols-2">
-    <div>
-      <h2 class="mb-2 text-xs uppercase tracking-[0.2em] text-phosphorDim">How it works</h2>
-      <p>
-        A name is a theme word plus a modifier: <b class="text-phosphor">Silent Falcon</b>,
-        <b class="text-phosphor">Petra Sorter</b>, <b class="text-phosphor">Stiller Falke</b>.
-        German inflects the modifier after the noun's gender, so the result reads like German
-        rather than like a translation. Themes of proper names - gods, racehorses, Swatch models -
-        work in both languages. A <span class="text-amber">*</span> marks a phonetic mutation,
-        which nudges a word off the dictionary: Pegasus becomes Pegasos.
-      </p>
+      <Generator client:only="react" />
+
+      <!-- Fusszettel im Ton eines Laufzettels, keine Marketingprosa. -->
+      <footer
+        class="mt-12 border-t border-dashed border-[#cfc6b6] pt-5 text-[0.74rem] leading-relaxed text-durchschlag"
+      >
+        <div class="grid gap-6 sm:grid-cols-3">
+          <p>
+            <span class="block tracking-telex text-[0.62rem]">BAUART</span>
+            Ein Name besteht aus einem Themenwort und einem Zusatz. Im Deutschen richtet
+            sich der Zusatz nach dem Geschlecht des Substantivs: Stiller Falke, Stille Eule,
+            Stilles Wiesel.
+          </p>
+          <p>
+            <span class="block tracking-telex text-[0.62rem]">HERKUNFT</span>
+            Dieselben Wortlisten treibt die Terminalfassung an:
+            <a
+              class="text-druck underline decoration-farbband underline-offset-2"
+              href="https://github.com/michaelblaess/codename-generator">codename-generator</a
+            >.
+          </p>
+          <p>
+            <span class="block tracking-telex text-[0.62rem]">VORBEHALT</span>
+            Namen entstehen aus Wortlisten und können mit bestehenden Produkt-, Projekt- oder
+            Firmennamen zusammenfallen. Vor öffentlicher Verwendung prüfen.
+          </p>
+        </div>
+        <p class="mt-6 text-[0.66rem] tracking-telex">
+          <a class="hover:text-farbband" href="https://michaelblaess.de">MICHAELBLAESS.DE</a>
+          <span class="mx-2">·</span>APACHE 2.0
+        </p>
+      </footer>
     </div>
-    <div>
-      <h2 class="mb-2 text-xs uppercase tracking-[0.2em] text-phosphorDim">Terminal version</h2>
-      <p>
-        This site is the web face of a TUI written in Python. Same word lists, same rules:
-        <a
-          class="text-phosphor underline decoration-phosphorDim underline-offset-4 hover:text-amber"
-          href="https://github.com/michaelblaess/codename-generator">github.com/michaelblaess/codename-generator</a
-        >.
-      </p>
-      <p class="mt-3 text-xs text-phosphorDim">
-        No warranty. Names are generated from word lists and may coincide with existing product,
-        project or company names - check before you use one publicly.
-      </p>
-    </div>
-  </section>
 
-  <footer class="mt-10 border-t border-rule pt-4 text-xs text-phosphorDim">
-    <a class="hover:text-phosphor" href="https://michaelblaess.de">Michael Blaess</a>
-    <span class="mx-2">·</span>
-    <a class="hover:text-phosphor" href="https://github.com/michaelblaess/codename-generator.de"
-      >Source</a
-    >
-    <span class="mx-2">·</span>Apache-2.0
-  </footer>
+    <div class="abriss"></div>
+  </div>
 </Base>

@@ -3,8 +3,10 @@ dist/
 node_modules/
 .astro/
 
-# Smoketest-Artefakt
+# Artefakte der Pruefskripte
 smoke.png
+entwurf.png
+druck.png
 
 # Werkzeuge
 .DS_Store
