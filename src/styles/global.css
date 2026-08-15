@@ -3,200 +3,253 @@
 @tailwind utilities;
 
 /*
- * Fernschreiber. Die Seite ist eine Bahn Endlospapier, die aus einer Maschine
- * laeuft: Traktorlochung an beiden Raendern, Greenbar-Zebra fuer die Zeilen,
- * Trommeldruck in warmem Schwarz. Das Farbband ist die einzige Farbe - es
- * markiert genau die Dinge, die die Maschine hervorhebt.
+ * Einsatzplakette. Ein Codename ist der Name einer Operation - also sieht die
+ * Seite aus wie ein Briefing-Aushang: Betongrau als Grund, harte Farbflaechen
+ * statt zarter Akzente, Gefahrenstreifen als Trenner, Kennnummern in Kaesten.
+ * Nichts ist rund, nichts verlaeuft weich.
  */
 :root {
-  --papier: #f0ebe0;
-  --greenbar: #dfe7d7;
-  --druck: #1c1815;
-  --durchschlag: #7a7268;
-  --farbband: #b62b22;
-  --gehaeuse: #23201c;
-  --lochung: #cfc6b6;
-  --zeile: 2.55rem;
+  --beton: #d9d6cd;
+  --tinte: #14161a;
+  --signal: #ff4d16;
+  --marine: #17356b;
+  --warn: #f2c200;
+  --blatt: #f2f0ea;
+  --raster: #c6c2b7;
 }
 
 html {
-  background: var(--gehaeuse);
-  color: var(--druck);
+  background: var(--beton);
+  color: var(--tinte);
   font-family: PlexMono, Consolas, monospace;
   color-scheme: light;
 }
 
 body {
   margin: 0;
-  /* Der Untergrund ist das Maschinengehaeuse, das Papier liegt darauf. */
-  background:
-    radial-gradient(ellipse at 50% -10%, #322d27, transparent 70%),
-    var(--gehaeuse);
+  /* Millimeterpapier-Raster: die Flaeche eines Aushangs, nicht eine leere Seite. */
+  background-image:
+    linear-gradient(var(--raster) 1px, transparent 1px),
+    linear-gradient(90deg, var(--raster) 1px, transparent 1px);
+  background-size: 2.2rem 2.2rem;
+  background-position: -1px -1px;
 }
 
-/* --- Papierbahn ----------------------------------------------------------
- * Die Lochung sitzt als wiederholter Radialverlauf in den Randspalten. Sie
- * gehoert zum Papier, nicht zu einem Rahmen - deshalb laeuft sie ueber die
- * ganze Hoehe durch.
+/* --- Gefahrenstreifen ----------------------------------------------------*/
+.streifen {
+  height: 0.85rem;
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--tinte) 0 0.75rem,
+    var(--warn) 0.75rem 1.5rem
+  );
+}
+
+.streifen-signal {
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--tinte) 0 0.75rem,
+    var(--signal) 0.75rem 1.5rem
+  );
+}
+
+/* --- Plakette ------------------------------------------------------------
+ * Der ausgewaehlte Name steht als Aufnaeher auf der Seite: Signalflaeche,
+ * harter Rahmen, Versalien bis an die Kante.
  */
-.bahn {
+.plakette {
   position: relative;
-  background: var(--papier);
-  padding-inline: 2.9rem;
-  box-shadow: 0 0 0 1px #d8cfc0, 0 22px 60px rgb(0 0 0 / 45%);
+  background: var(--signal);
+  color: var(--blatt);
+  border: 4px solid var(--tinte);
+  box-shadow: 0.7rem 0.7rem 0 var(--tinte);
 }
 
-.bahn::before,
-.bahn::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 2.9rem;
-  background-image: radial-gradient(circle at 50% 50%, var(--lochung) 0 0.28rem, transparent 0.29rem);
-  background-size: 100% 1.35rem;
-  border-inline: 1px dashed #d5ccbc;
+.held {
+  font-size: clamp(2rem, 8.2vw, 5.6rem);
+  font-weight: 600;
+  line-height: 0.94;
+  letter-spacing: -0.015em;
+  text-transform: uppercase;
+  word-break: break-word;
 }
 
-.bahn::before {
-  left: 0;
-  border-left: none;
-}
-
-.bahn::after {
-  right: 0;
-  border-right: none;
-}
-
-/* Abrisskante oben und unten: die gezackte Perforation zwischen zwei Blaettern. */
-.abriss {
-  height: 0.75rem;
-  background:
-    linear-gradient(45deg, transparent 48%, #d5ccbc 49% 51%, transparent 52%) repeat-x,
-    var(--papier);
-  background-size: 0.75rem 0.75rem;
-  opacity: 0.85;
-}
-
-/* --- Greenbar ------------------------------------------------------------
- * Endlospapier fuer Listendruck trug blassgruene Baender ueber je zwei Zeilen.
- * Hier traegt jede zweite Zeile die Bahn - das fuehrt das Auge durch 40 Namen.
- */
-.greenbar > *:nth-child(even) {
-  background: var(--greenbar);
-}
-
-/* --- Bedienfeld ----------------------------------------------------------
- * Tasten statt Auswahllisten: eine Maschine hat Tasten, die einrasten.
- */
-.taste {
-  border: 1px solid #cec5b5;
-  background: #e7e1d5;
-  color: var(--durchschlag);
-  padding: 0.3rem 0.6rem;
+/* Kennnummer im Kasten - jede Operation traegt eine. */
+.kennung {
+  border: 3px solid var(--tinte);
+  background: var(--blatt);
+  color: var(--tinte);
+  padding: 0.1rem 0.5rem;
   font-size: 0.78rem;
-  letter-spacing: 0.06em;
-  box-shadow: inset 0 -2px 0 #d3cabb;
-  transition: transform 0.06s ease-out;
+  letter-spacing: 0.22em;
+}
+
+/* Der Stempel faellt schief aufs Blatt, wenn ein Name mitgenommen wurde. */
+.stempel {
+  position: absolute;
+  bottom: -1.1rem;
+  right: 1rem;
+  transform: rotate(-7deg);
+  border: 3px solid var(--marine);
+  background: var(--blatt);
+  color: var(--marine);
+  padding: 0.15rem 0.8rem;
+  font-size: 0.9rem;
+  letter-spacing: 0.28em;
+  animation: stempeln 0.16s ease-out;
+  pointer-events: none;
+}
+
+@keyframes stempeln {
+  from {
+    transform: rotate(-7deg) scale(1.6);
+    opacity: 0;
+  }
+  to {
+    transform: rotate(-7deg) scale(1);
+    opacity: 1;
+  }
+}
+
+/* --- Karten --------------------------------------------------------------
+ * Die Alternativen liegen als Karteikarten im Raster, nicht als Zeilenliste.
+ */
+.karte {
+  background: var(--blatt);
+  border: 2px solid var(--tinte);
+  text-align: left;
+  padding: 0.5rem 0.6rem;
+  transition: transform 0.08s ease-out;
+}
+
+.karte:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 4px 4px 0 var(--tinte);
+}
+
+.karte[aria-current='true'] {
+  background: var(--marine);
+  color: var(--blatt);
+  box-shadow: 4px 4px 0 var(--tinte);
+}
+
+.karte[aria-current='true'] .karte-slug {
+  color: #b9c6e2;
+}
+
+/* --- Schalttafel ---------------------------------------------------------*/
+.taste {
+  border: 2px solid var(--tinte);
+  background: var(--blatt);
+  color: var(--tinte);
+  padding: 0.28rem 0.6rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
 }
 
 .taste:hover {
-  color: var(--druck);
+  background: var(--warn);
 }
 
 .taste[aria-pressed='true'] {
-  background: var(--druck);
-  border-color: var(--druck);
-  color: var(--papier);
-  box-shadow: inset 0 2px 0 #000;
-  transform: translateY(1px);
+  background: var(--tinte);
+  color: var(--blatt);
 }
 
 .taste:focus-visible,
-.zeile:focus-visible,
-button:focus-visible {
-  outline: 2px solid var(--farbband);
+button:focus-visible,
+a:focus-visible {
+  outline: 3px solid var(--marine);
   outline-offset: 2px;
 }
 
-/* --- Regler --------------------------------------------------------------
- * Kein Browser-Default: eine Schiene mit eckigem Griff, wie ein Schieber am
- * Geraet.
- */
+/* Hauptschalter: der eine Knopf, der die Maschine ausloest. */
+.hauptschalter {
+  background: var(--tinte);
+  color: var(--blatt);
+  border: 3px solid var(--tinte);
+  box-shadow: 0.35rem 0.35rem 0 var(--signal);
+  padding: 0.6rem 1.4rem;
+  letter-spacing: 0.22em;
+}
+
+.hauptschalter:hover {
+  background: var(--signal);
+  box-shadow: 0.35rem 0.35rem 0 var(--tinte);
+}
+
+.hauptschalter:active {
+  transform: translate(0.2rem, 0.2rem);
+  box-shadow: 0.15rem 0.15rem 0 var(--tinte);
+}
+
+/* --- Regler --------------------------------------------------------------*/
 input[type='range'] {
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
-  height: 1.1rem;
+  height: 1.4rem;
   background: transparent;
   cursor: pointer;
 }
 
 input[type='range']::-webkit-slider-runnable-track {
-  height: 0.35rem;
-  background: repeating-linear-gradient(90deg, #cdc4b4 0 2px, #e0d9cb 2px 6px);
-  border: 1px solid #c3b9a8;
+  height: 0.5rem;
+  background: var(--blatt);
+  border: 2px solid var(--tinte);
 }
 
 input[type='range']::-moz-range-track {
-  height: 0.35rem;
-  background: repeating-linear-gradient(90deg, #cdc4b4 0 2px, #e0d9cb 2px 6px);
-  border: 1px solid #c3b9a8;
+  height: 0.5rem;
+  background: var(--blatt);
+  border: 2px solid var(--tinte);
 }
 
 input[type='range']::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 0.7rem;
-  height: 1.1rem;
-  margin-top: -0.42rem;
-  background: var(--druck);
-  border: none;
-  box-shadow: inset 0 0 0 2px #6b6259;
+  width: 1rem;
+  height: 1.4rem;
+  margin-top: -0.5rem;
+  background: var(--signal);
+  border: 2px solid var(--tinte);
 }
 
 input[type='range']::-moz-range-thumb {
-  width: 0.7rem;
-  height: 1.1rem;
+  width: 1rem;
+  height: 1.4rem;
   border-radius: 0;
-  background: var(--druck);
-  border: none;
-  box-shadow: inset 0 0 0 2px #6b6259;
+  background: var(--signal);
+  border: 2px solid var(--tinte);
 }
 
-/* --- Themenliste ---------------------------------------------------------
- * Eigene Bildlaufleiste, damit die Browser-Leiste nicht das Papier zerschneidet.
- */
+/* --- Themenliste ---------------------------------------------------------*/
 .kanal {
   scrollbar-width: thin;
-  scrollbar-color: #b9af9e transparent;
+  scrollbar-color: var(--tinte) var(--blatt);
 }
 
 .kanal::-webkit-scrollbar {
-  width: 0.5rem;
+  width: 0.6rem;
 }
 
 .kanal::-webkit-scrollbar-thumb {
-  background: #b9af9e;
+  background: var(--tinte);
 }
 
 .kanal::-webkit-scrollbar-track {
-  background: #e2dbcd;
+  background: var(--blatt);
 }
 
 /* --- Kleinkram -----------------------------------------------------------*/
-
-/* Der Druckkopf blinkt am Ende der Kopfzeile. Als Kasten gezeichnet, nicht als
- * Blockzeichen - PlexMono traegt die Blockglyphen nicht und der Browser holt
- * sie sonst aus einer fremden Schrift (gemessen: 0.92 statt 1.00 Dickte). */
-.kopf-cursor::after {
+.blinker::after {
   content: '';
   display: inline-block;
-  width: 0.42em;
+  width: 0.45em;
   height: 1em;
-  margin-left: 0.15em;
+  margin-left: 0.2em;
   vertical-align: -0.12em;
-  background: var(--farbband);
+  background: var(--signal);
   animation: blinken 1.05s steps(1) infinite;
 }
 
@@ -206,37 +259,16 @@ input[type='range']::-moz-range-thumb {
   }
 }
 
-/* Der Druckkopf: ein Balken, der auf der gerade entstehenden Zeile steht. */
-.druckkopf {
-  width: 0.55rem;
-  height: 1.1rem;
-  align-self: center;
-  background: var(--farbband);
-  box-shadow: 0 0 0 1px rgb(0 0 0 / 25%);
-}
-
-/* Der Papiervorschub: ein frischer Stapel rutscht eine Zeile hoch. */
-.vorschub {
-  animation: vorschub 0.42s cubic-bezier(0.2, 0.8, 0.3, 1);
-}
-
-@keyframes vorschub {
-  from {
-    transform: translateY(calc(var(--zeile) * -0.6));
-  }
-  to {
-    transform: translateY(0);
-  }
-}
-
 ::selection {
-  background: var(--farbband);
-  color: var(--papier);
+  background: var(--signal);
+  color: var(--blatt);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .kopf-cursor::after,
-  .vorschub {
+  .blinker::after,
+  .stempel,
+  .karte {
     animation: none;
+    transition: none;
   }
 }

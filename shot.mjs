@@ -27,9 +27,11 @@ await page.goto(process.env.SHOT_URL, { waitUntil: 'networkidle' });
 // Die Astro-Dev-Toolbar gehoert nicht ins Bild.
 await page.addStyleTag({ content: 'astro-dev-toolbar { display: none !important; }' });
 
-// Optional den Druckkopf ausloesen und mitten im Lauf abdruecken.
+// Optional den Druck ausloesen und mitten im Lauf abdruecken. Ueber die
+// Pfeiltaste statt ueber den Knopf - sonst scrollt der Klick aus dem Bild.
 if (process.env.SHOT_PRINT === '1') {
-  await page.getByRole('button', { name: 'NEUER STAPEL' }).click();
+  await page.waitForTimeout(1200);
+  await page.keyboard.press('ArrowRight');
   await page.waitForTimeout(Number(process.env.SHOT_DELAY ?? 260));
 } else {
   await page.waitForTimeout(2500);

@@ -11,59 +11,66 @@ const wordCount = list.reduce((sum, t) => sum + t.words.length, 0);
   title="Codename Generator - project codenames from curated themes"
   description={`Generate project codenames from ${list.length} curated themes and ${wordCount} words, in English or German, with optional phonetic mutation.`}
 >
-  <div class="mx-auto max-w-5xl px-3 py-6 sm:py-10">
-    <div class="abriss"></div>
-
-    <div class="bahn py-8">
-      <!-- Kopf des Fernschreibers: Absender, Betreff, Laufzettel. -->
-      <header class="mb-8">
-        <p class="text-[0.66rem] tracking-telex text-durchschlag">
-          MICHAEL BLAESS · WERKZEUG NR. 7
-        </p>
-        <h1 class="mt-2 text-3xl font-semibold leading-none tracking-tight sm:text-[2.7rem]">
-          CODENAME GENERATOR
-        </h1>
-        <p class="mt-4 max-w-[46rem] text-[0.9rem] leading-relaxed text-druck">
-          Ein Projekt braucht einen Namen, bevor es einen Ordner braucht. Diese Maschine
-          druckt {list.length} Themen und {wordCount} Wörter zu Namenspaaren zusammen, auf
-          Englisch oder Deutsch. Alles läuft in deinem Browser, nichts wird gesendet.
-        </p>
-      </header>
-
-      <Generator client:only="react" />
-
-      <!-- Fusszettel im Ton eines Laufzettels, keine Marketingprosa. -->
-      <footer
-        class="mt-12 border-t border-dashed border-[#cfc6b6] pt-5 text-[0.74rem] leading-relaxed text-durchschlag"
-      >
-        <div class="grid gap-6 sm:grid-cols-3">
-          <p>
-            <span class="block tracking-telex text-[0.62rem]">BAUART</span>
-            Ein Name besteht aus einem Themenwort und einem Zusatz. Im Deutschen richtet
-            sich der Zusatz nach dem Geschlecht des Substantivs: Stiller Falke, Stille Eule,
-            Stilles Wiesel.
-          </p>
-          <p>
-            <span class="block tracking-telex text-[0.62rem]">HERKUNFT</span>
-            Dieselben Wortlisten treibt die Terminalfassung an:
-            <a
-              class="text-druck underline decoration-farbband underline-offset-2"
-              href="https://github.com/michaelblaess/codename-generator">codename-generator</a
-            >.
-          </p>
-          <p>
-            <span class="block tracking-telex text-[0.62rem]">VORBEHALT</span>
-            Namen entstehen aus Wortlisten und können mit bestehenden Produkt-, Projekt- oder
-            Firmennamen zusammenfallen. Vor öffentlicher Verwendung prüfen.
+  <div class="mx-auto max-w-6xl px-4 py-8 sm:py-12">
+    <!-- Kopf des Aushangs: Betreff links, Bestandsangaben rechts im Kasten. -->
+    <header class="mb-8 border-4 border-tinte bg-blatt">
+      <div class="streifen"></div>
+      <div class="flex flex-wrap items-end justify-between gap-6 px-5 py-5 sm:px-7">
+        <div>
+          <p class="text-[0.68rem] tracking-[0.32em]">MICHAEL BLAESS</p>
+          <h1 class="mt-1 text-3xl font-semibold leading-none tracking-tight sm:text-5xl">
+            CODENAME<br class="sm:hidden" /> GENERATOR<span class="blinker"></span>
+          </h1>
+          <p class="mt-3 max-w-[38rem] text-[0.86rem] leading-relaxed">
+            Namen für Projekte, die noch keinen haben. Aussuchen, mitnehmen, weiterarbeiten.
           </p>
         </div>
-        <p class="mt-6 text-[0.66rem] tracking-telex">
-          <a class="hover:text-farbband" href="https://michaelblaess.de">MICHAELBLAESS.DE</a>
-          <span class="mx-2">·</span>APACHE 2.0
-        </p>
-      </footer>
-    </div>
+        <dl class="flex gap-3 text-center">
+          <div class="border-2 border-tinte px-3 py-2">
+            <dt class="text-[0.6rem] tracking-[0.2em]">THEMEN</dt>
+            <dd class="text-2xl font-semibold tabular-nums">{list.length}</dd>
+          </div>
+          <div class="border-2 border-tinte px-3 py-2">
+            <dt class="text-[0.6rem] tracking-[0.2em]">WÖRTER</dt>
+            <dd class="text-2xl font-semibold tabular-nums">{wordCount}</dd>
+          </div>
+          <div class="border-2 border-tinte bg-marine px-3 py-2 text-blatt">
+            <dt class="text-[0.6rem] tracking-[0.2em]">SPRACHEN</dt>
+            <dd class="text-2xl font-semibold tabular-nums">2</dd>
+          </div>
+        </dl>
+      </div>
+    </header>
 
-    <div class="abriss"></div>
+    <Generator client:only="react" />
+
+    <!-- Fusszettel im Ton eines Aushangs, keine Marketingprosa. -->
+    <footer class="mt-14 border-4 border-tinte bg-blatt">
+      <div class="streifen streifen-signal"></div>
+      <div class="grid gap-6 px-5 py-6 text-[0.76rem] leading-relaxed sm:grid-cols-3 sm:px-7">
+        <p>
+          <span class="mb-1 block tracking-[0.28em]">BAUART</span>
+          Ein Name besteht aus einem Themenwort und einem Zusatz. Im Deutschen richtet sich der
+          Zusatz nach dem Geschlecht des Substantivs: Stiller Falke, Stille Eule, Stilles Wiesel.
+        </p>
+        <p>
+          <span class="mb-1 block tracking-[0.28em]">HERKUNFT</span>
+          Dieselben Wortlisten treiben die Terminalfassung an:
+          <a
+            class="underline decoration-signal decoration-2 underline-offset-2"
+            href="https://github.com/michaelblaess/codename-generator">codename-generator</a
+          >. Alles läuft im Browser, nichts wird gesendet.
+        </p>
+        <p>
+          <span class="mb-1 block tracking-[0.28em]">VORBEHALT</span>
+          Namen entstehen aus Wortlisten und können mit bestehenden Produkt-, Projekt- oder
+          Firmennamen zusammenfallen. Vor öffentlicher Verwendung prüfen.
+        </p>
+      </div>
+      <p class="border-t-2 border-tinte px-5 py-3 text-[0.66rem] tracking-[0.28em] sm:px-7">
+        <a class="hover:text-signal" href="https://michaelblaess.de">MICHAELBLAESS.DE</a>
+        <span class="mx-2">·</span>APACHE 2.0
+      </p>
+    </footer>
   </div>
 </Base>

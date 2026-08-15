@@ -14,7 +14,6 @@ const LANGUAGE_LABELS: Record<string, string> = { en: 'English', de: 'Deutsch' }
 const COUNTS = [10, 20, 30, 40];
 const WORDS = [1, 2, 3];
 
-/** Liest den Startzustand aus der URL, damit Permalinks funktionieren. */
 function readUrlState() {
   if (typeof window === 'undefined') return null;
   const p = new URLSearchParams(window.location.search);
@@ -28,19 +27,22 @@ function readUrlState() {
   };
 }
 
-/** Stapelnummer aus dem Seed - vierstellig, wie eine Sendenummer im Telex. */
-function batchNumber(seed: number): string {
-  return String(seed % 10000).padStart(4, '0');
+/** Einsatzkennung aus Seed und Position - jede Operation traegt eine. */
+function kennung(seed: number, index: number): string {
+  return `OP-${String(seed % 1000).padStart(3, '0')}-${String(index + 1).padStart(2, '0')}`;
 }
 
-interface TasteProps {
+function Taste({
+  active,
+  onClick,
+  children,
+  title,
+}: {
   active: boolean;
   onClick: () => void;
   children: React.ReactNode;
   title?: string;
-}
-
-function Taste({ active, onClick, children, title }: TasteProps) {
+}) {
   return (
     <button type="button" className="taste" aria-pressed={active} onClick={onClick} title={title}>
       {children}
@@ -55,8 +57,9 @@ export default function Generator() {
   const [wordCount, setWordCount] = useState<number>(2);
   const [count, setCount] = useState<number>(20);
   const [seed, setSeed] = useState<number>(() => randomSeed());
-  const [meldung, setMeldung] = useState<string>('');
-  const listRef = useRef<HTMLOListElement>(null);
+  const [aktiv, setAktiv] = useState<number>(0);
+  const [stempel, setStempel] = useState<string>('');
+  const heldRef = useRef<HTMLParagraphElement>(null);
   const aktivesThemaRef = useRef<HTMLButtonElement>(null);
   const firstRender = useRef(true);
 
@@ -73,14 +76,12 @@ export default function Generator() {
     if (state.words !== null) setWordCount(Math.max(1, Math.min(3, state.words)));
   }, []);
 
-  // Faellt das Thema aus der Sprache, uebernimmt das erste sichtbare.
   useEffect(() => {
     if (!available.some((t) => t.slug === themeSlug)) {
       setThemeSlug(available[0]?.slug ?? 'random');
     }
   }, [available, themeSlug]);
 
-  // Ein Thema darf seinen Mutations-Startwert vorgeben (deutsche Themen: 0).
   useEffect(() => {
     if (theme?.defaultMutation !== null && theme?.defaultMutation !== undefined) {
       setMutation(theme.defaultMutation);
@@ -89,7 +90,7 @@ export default function Generator() {
   }, [themeSlug]);
 
   // Das aktive Thema muss sichtbar sein - bei 23 Eintraegen liegt es nach einem
-  // Permalink sonst ausserhalb des Sichtfensters und die Liste wirkt leer.
+  // Permalink sonst ausserhalb des Sichtfensters.
   useEffect(() => {
     aktivesThemaRef.current?.scrollIntoView({ block: 'nearest' });
   }, [themeSlug, language]);
@@ -100,49 +101,43 @@ export default function Generator() {
       .suggestions;
   }, [themeSlug, count, mutation, wordCount, language, seed, theme]);
 
-  // Der Nadeldrucker legt Zeile fuer Zeile an. Das machen wir selbst statt mit
-  // retro-text-effects: dessen print() setzt den Textinhalt des Zielelements neu
-  // und wuerde dabei alle Schaltflaechen der Liste loeschen (gemessen: 40 -> 0).
-  // Hier bleibt die Struktur unberuehrt, nur die Sichtbarkeit wandert durch.
-  const [gedruckt, setGedruckt] = useState<number>(Number.POSITIVE_INFINITY);
-  const laufRef = useRef<number>(0);
+  const held = suggestions[Math.min(aktiv, Math.max(suggestions.length - 1, 0))];
 
+  // Jede Aenderung an den Zutaten fuehrt zurueck auf die erste Karte.
+  useEffect(() => {
+    setAktiv(0);
+  }, [seed, themeSlug, language, wordCount, mutation, count]);
+
+  // Der Name wird gedruckt, Zeichen fuer Zeichen. Das Ziel ist reiner Text -
+  // hier darf retro-text-effects arbeiten, ohne Bedienelemente zu zerstoeren.
+  const heldName = held?.name;
   useEffect(() => {
     if (firstRender.current) {
       firstRender.current = false;
       return;
     }
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setGedruckt(Number.POSITIVE_INFINITY);
-      return;
-    }
-    const element = listRef.current;
-    if (element) {
-      element.classList.remove('vorschub');
-      void element.offsetWidth;
-      element.classList.add('vorschub');
-    }
-    setGedruckt(0);
-    window.clearInterval(laufRef.current);
-    laufRef.current = window.setInterval(() => {
-      setGedruckt((n) => {
-        if (n >= count) {
-          window.clearInterval(laufRef.current);
-          return Number.POSITIVE_INFINITY;
-        }
-        return n + 1;
+    const element = heldRef.current;
+    if (!element || !heldName) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    let lauf: { cancel?: () => void } | undefined;
+    // Der ESM-Einstieg liegt in src/ - dist/ ist ein IIFE-Bundle ohne Exporte.
+    import('retro-text-effects/src/index.js')
+      .then(({ print }) => {
+        lauf = print(element, { cps: 40, head: '_' });
+      })
+      .catch(() => {
+        /* Ohne Effekt steht der Name trotzdem da. */
       });
-    }, 26);
-    return () => window.clearInterval(laufRef.current);
-  }, [seed, count]);
+    return () => lauf?.cancel?.();
+  }, [heldName]);
 
   const kopieren = async (text: string, was: string) => {
     try {
       await navigator.clipboard.writeText(text);
-      setMeldung(`${was} kopiert: ${text}`);
-      window.setTimeout(() => setMeldung(''), 1600);
+      setStempel(was);
+      window.setTimeout(() => setStempel(''), 1500);
     } catch {
-      setMeldung('Zwischenablage nicht verfügbar - Text markieren und kopieren');
+      setStempel('GESPERRT');
     }
   };
 
@@ -154,102 +149,142 @@ export default function Generator() {
       mut: String(mutation),
       words: String(wordCount),
     });
-    void kopieren(`${window.location.origin}${window.location.pathname}?${p}`, 'Link');
+    void kopieren(`${window.location.origin}${window.location.pathname}?${p}`, 'LINK');
   };
 
-  const kopf = [
-    `STAPEL ${batchNumber(seed)}`,
-    language.toUpperCase(),
-    `MUT ${mutation}%`,
-    `${wordCount} WORT${wordCount === 1 ? '' : 'E'}`,
-    `${count} ZEILEN`,
-  ];
+  const blaettern = (schritt: number) => {
+    if (suggestions.length === 0) return;
+    setAktiv((n) => (n + schritt + suggestions.length) % suggestions.length);
+  };
+
+  // Pfeiltasten blaettern durch den Stapel - schneller als Klicken, und die
+  // Plakette bleibt dabei im Blick.
+  useEffect(() => {
+    const aufTaste = (e: KeyboardEvent) => {
+      const ziel = e.target as HTMLElement | null;
+      if (ziel && ['INPUT', 'TEXTAREA', 'SELECT'].includes(ziel.tagName)) return;
+      if (e.key === 'ArrowRight') blaettern(1);
+      else if (e.key === 'ArrowLeft') blaettern(-1);
+      else return;
+      e.preventDefault();
+    };
+    window.addEventListener('keydown', aufTaste);
+    return () => window.removeEventListener('keydown', aufTaste);
+  });
 
   return (
     <>
-      {/* Maschinenkopf: was die Maschine gerade eingestellt hat, in einer Zeile. */}
-      <div className="mb-6 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 border-b border-dashed border-[#cfc6b6] pb-2 text-[0.72rem] tracking-[0.18em] text-durchschlag">
-        <span className="flex flex-wrap gap-x-7 gap-y-1">
-          {kopf.map((feld) => (
-            <span key={feld}>{feld}</span>
-          ))}
-        </span>
-        <span className="text-druck">
-          {theme?.name}
-          <span className="kopf-cursor" />
-        </span>
-      </div>
+      {/* --- Die Plakette: eine Operation, gross genug zum Anschauen --- */}
+      <section className="plakette mb-12 px-5 py-6 sm:px-8 sm:py-8">
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <span className="kennung">{held ? kennung(seed, aktiv) : 'OP-000-00'}</span>
+          <span className="text-[0.72rem] tracking-[0.22em]">
+            {theme?.name} · {language.toUpperCase()}
+          </span>
+          {held?.mutated && (
+            <span className="kennung" style={{ background: 'var(--warn)' }}>
+              MUTIERT
+            </span>
+          )}
+          <span className="ml-auto text-[0.72rem] tracking-[0.22em]">
+            {String(aktiv + 1).padStart(2, '0')} / {String(suggestions.length).padStart(2, '0')}
+          </span>
+        </div>
 
-      <div className="grid gap-8 lg:grid-cols-[1fr_15rem]">
-        {/* Die Bahn: 001, Name, Slug. Jede zweite Zeile traegt die Greenbar. */}
+        <p ref={heldRef} className="held">
+          {heldName ?? '...'}
+        </p>
+
+        <div className="mt-6 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => held && kopieren(held.name, 'KOPIERT')}
+            className="kennung"
+            title="Namen in die Zwischenablage legen"
+          >
+            NAME KOPIEREN
+          </button>
+          <button
+            type="button"
+            onClick={() => held && kopieren(held.slug, 'SLUG')}
+            className="text-[0.86rem] underline decoration-2 underline-offset-4"
+            title="Slug kopieren"
+          >
+            {held?.slug}
+          </button>
+          <span className="ml-auto flex gap-2">
+            <button
+              type="button"
+              className="blaettern kennung"
+              onClick={() => blaettern(-1)}
+              aria-label="Vorheriger Vorschlag"
+            >
+              &lt;
+            </button>
+            <button
+              type="button"
+              className="blaettern kennung"
+              onClick={() => blaettern(1)}
+              aria-label="Nächster Vorschlag"
+            >
+              &gt;
+            </button>
+          </span>
+        </div>
+
+        {stempel && <span className="stempel">{stempel}</span>}
+      </section>
+
+      <div className="grid gap-8 lg:grid-cols-[1fr_16rem]">
+        {/* --- Die Alternativen als Karten im Raster --- */}
         <div>
-          <ol ref={listRef} className="greenbar -mx-2">
+          <div className="mb-3 flex items-baseline justify-between">
+            <h2 className="text-[0.72rem] tracking-[0.28em]">WEITERE VORSCHLÄGE</h2>
+            <span className="text-[0.72rem] tracking-[0.22em] opacity-60">
+              STAPEL {String(seed % 10000).padStart(4, '0')}
+            </span>
+          </div>
+          <ol className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
             {suggestions.map((s, index) => (
-              <li
-                key={`${s.slug}-${index}`}
-                data-gedruckt={index < gedruckt ? 'ja' : 'nein'}
-                className="zeile group flex items-baseline gap-4 px-2 py-[0.42rem] data-[gedruckt=nein]:invisible"
-              >
-                <span className="w-8 shrink-0 text-[0.7rem] tabular-nums text-durchschlag">
-                  {String(index + 1).padStart(3, '0')}
-                </span>
-                {index === gedruckt - 1 && (
-                  <span aria-hidden="true" className="druckkopf" />
-                )}
+              <li key={`${s.slug}-${index}`}>
                 <button
                   type="button"
-                  onClick={() => kopieren(s.name, 'Name')}
-                  className="text-left text-[1.32rem] font-semibold leading-tight tracking-tight text-druck decoration-farbband decoration-2 underline-offset-4 hover:underline"
+                  className="karte w-full"
+                  aria-current={index === aktiv}
+                  onClick={() => setAktiv(index)}
                 >
-                  {s.name}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => kopieren(s.slug, 'Slug')}
-                  className="hidden text-[0.72rem] text-durchschlag hover:text-farbband sm:inline"
-                  title="Slug kopieren"
-                >
-                  {s.slug}
-                </button>
-                {s.mutated && (
-                  <span
-                    className="ml-auto shrink-0 text-[0.62rem] tracking-[0.2em] text-farbband"
-                    title="phonetisch mutiert"
-                  >
-                    MUT
+                  <span className="flex items-baseline gap-2">
+                    <span className="text-[0.62rem] tabular-nums opacity-60">
+                      {String(index + 1).padStart(2, '0')}
+                    </span>
+                    <span className="text-[0.98rem] font-semibold leading-tight">{s.name}</span>
+                    {s.mutated && (
+                      <span className="ml-auto text-[0.58rem] tracking-[0.2em] text-signal">
+                        MUT
+                      </span>
+                    )}
                   </span>
-                )}
+                  <span className="karte-slug mt-0.5 block text-[0.68rem] opacity-60">{s.slug}</span>
+                </button>
               </li>
             ))}
           </ol>
 
-          <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-dashed border-[#cfc6b6] pt-4">
-            <button
-              type="button"
-              onClick={() => setSeed(randomSeed())}
-              className="bg-druck px-5 py-2 text-[0.8rem] tracking-[0.2em] text-papier hover:bg-farbband"
-            >
-              NEUER STAPEL
+          <div className="mt-6 flex flex-wrap items-center gap-4">
+            <button type="button" onClick={() => setSeed(randomSeed())} className="hauptschalter">
+              NEUE NAMEN
             </button>
-            <button
-              type="button"
-              onClick={permalink}
-              className="taste"
-              title="Link kopieren, der genau diesen Stapel wieder erzeugt"
-            >
+            <button type="button" onClick={permalink} className="taste">
               LINK ZU DIESEM STAPEL
             </button>
-            <span aria-live="polite" className="text-[0.72rem] text-farbband">
-              {meldung}
-            </span>
           </div>
         </div>
 
-        {/* Bedienfeld. Tasten rasten ein, nur die Mutation ist ein Schieber. */}
-        <aside className="space-y-6 text-[0.78rem]">
+        {/* --- Schalttafel --- */}
+        <aside className="space-y-6">
           <section>
-            <h2 className="mb-2 text-[0.66rem] tracking-telex text-durchschlag">THEMA</h2>
-            <ul className="kanal h-[15.75rem] overflow-y-auto border border-[#d5ccbc] bg-[#e9e3d7]">
+            <h2 className="mb-2 text-[0.68rem] tracking-[0.28em]">THEMA</h2>
+            <ul className="kanal h-[16rem] overflow-y-auto border-2 border-tinte bg-blatt">
               {available.map((t) => (
                 <li key={t.slug}>
                   <button
@@ -258,10 +293,8 @@ export default function Generator() {
                     onClick={() => setThemeSlug(t.slug)}
                     title={t.description}
                     aria-current={t.slug === themeSlug}
-                    className={`flex w-full items-baseline justify-between gap-2 px-2 py-1 text-left ${
-                      t.slug === themeSlug
-                        ? 'bg-druck text-papier'
-                        : 'text-durchschlag hover:bg-[#ded7c9] hover:text-druck'
+                    className={`flex w-full items-baseline justify-between gap-2 px-2 py-1 text-left text-[0.8rem] ${
+                      t.slug === themeSlug ? 'bg-tinte text-blatt' : 'hover:bg-warn'
                     }`}
                   >
                     <span>{t.name}</span>
@@ -273,8 +306,8 @@ export default function Generator() {
           </section>
 
           <section>
-            <h2 className="mb-2 text-[0.66rem] tracking-telex text-durchschlag">SPRACHE</h2>
-            <div className="flex gap-1">
+            <h2 className="mb-2 text-[0.68rem] tracking-[0.28em]">SPRACHE</h2>
+            <div className="flex gap-2">
               {LANGUAGES.map((lang) => (
                 <Taste key={lang} active={lang === language} onClick={() => setLanguage(lang)}>
                   {LANGUAGE_LABELS[lang] ?? lang}
@@ -284,10 +317,8 @@ export default function Generator() {
           </section>
 
           <section>
-            <h2 className="mb-2 text-[0.66rem] tracking-telex text-durchschlag">
-              WÖRTER JE NAME
-            </h2>
-            <div className="flex gap-1">
+            <h2 className="mb-2 text-[0.68rem] tracking-[0.28em]">WÖRTER</h2>
+            <div className="flex flex-wrap items-center gap-2">
               {WORDS.map((n) => (
                 <Taste
                   key={n}
@@ -299,14 +330,14 @@ export default function Generator() {
                 </Taste>
               ))}
               {Boolean(theme?.patterns.length) && (
-                <span className="self-center text-[0.62rem] text-farbband">vom Thema gesetzt</span>
+                <span className="text-[0.62rem] text-signal">vom Thema gesetzt</span>
               )}
             </div>
           </section>
 
           <section>
-            <h2 className="mb-2 text-[0.66rem] tracking-telex text-durchschlag">ZEILEN</h2>
-            <div className="flex gap-1">
+            <h2 className="mb-2 text-[0.68rem] tracking-[0.28em]">ANZAHL</h2>
+            <div className="flex gap-2">
               {COUNTS.map((n) => (
                 <Taste key={n} active={n === count} onClick={() => setCount(n)}>
                   {n}
@@ -316,9 +347,9 @@ export default function Generator() {
           </section>
 
           <section>
-            <h2 className="mb-1 flex items-baseline justify-between text-[0.66rem] tracking-telex text-durchschlag">
+            <h2 className="mb-1 flex items-baseline justify-between text-[0.68rem] tracking-[0.28em]">
               <span>MUTATION</span>
-              <span className="tabular-nums text-farbband">{mutation}%</span>
+              <span className="tabular-nums text-signal">{mutation}%</span>
             </h2>
             <input
               type="range"
@@ -329,9 +360,9 @@ export default function Generator() {
               onChange={(e) => setMutation(Number(e.target.value))}
               aria-label="Mutation in Prozent"
             />
-            <p className="mt-1 text-[0.68rem] leading-snug text-durchschlag">
-              Verbiegt die Wörter phonetisch. Betroffene Zeilen tragen{' '}
-              <span className="text-farbband">MUT</span>.
+            <p className="mt-1 text-[0.68rem] leading-snug opacity-70">
+              Verbiegt die Wörter phonetisch. Betroffene Namen tragen{' '}
+              <span className="text-signal">MUT</span>.
             </p>
           </section>
         </aside>
