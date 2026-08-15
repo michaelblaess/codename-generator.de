@@ -1,0 +1,91 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Phosphor-Terminal. Bernstein auf fast schwarz, weil das der Look alter
+ * Monochrom-Monitore ist und die Codenamen wie Fernschreiber-Ausgabe wirken
+ * sollen.
+ */
+:root {
+  --crt: #0a0e0a;
+  --panel: #101610;
+  --rule: #1f2b1f;
+  --phosphor: #7dff8a;
+  --phosphor-dim: #2f6b36;
+  --amber: #ffb648;
+  --scan: rgba(0, 0, 0, 0.35);
+}
+
+/* Bernstein-Variante fuer alle, die Gruen nicht moegen. */
+:root[data-look='amber'] {
+  --phosphor: #ffc457;
+  --phosphor-dim: #7a5418;
+}
+
+html {
+  background: var(--crt);
+  color: var(--phosphor);
+  font-family: ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace;
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(125, 255, 138, 0.06), transparent 60%),
+    var(--crt);
+}
+
+/* Scanlines. Rein dekorativ, deshalb pointer-events aus. */
+.crt-scanlines::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0 2px,
+    var(--scan) 2px 3px
+  );
+  opacity: 0.5;
+}
+
+.glow {
+  text-shadow: 0 0 6px var(--phosphor-dim);
+}
+
+/* Blinkender Cursor am Ende der Kopfzeile. */
+.cursor::after {
+  content: '_';
+  animation: blink 1.1s steps(1) infinite;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+/* Wer Bewegung abbestellt hat, bekommt keine - Effekte und Blinken aus. */
+@media (prefers-reduced-motion: reduce) {
+  .cursor::after { animation: none; }
+  .crt-scanlines::before { display: none; }
+}
+
+/* Formularelemente im Terminal-Look, ohne Browser-Eigenheiten. */
+select,
+input[type='range'] {
+  accent-color: var(--phosphor);
+}
+
+select {
+  background: var(--panel);
+  color: var(--phosphor);
+  border: 1px solid var(--rule);
+}
+
+::selection {
+  background: var(--phosphor-dim);
+  color: #fff;
+}

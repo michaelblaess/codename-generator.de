@@ -1,0 +1,14 @@
+# Build und Abhaengigkeiten
+dist/
+node_modules/
+.astro/
+
+# Smoketest-Artefakt
+smoke.png
+
+# Werkzeuge
+.DS_Store
+*.log
+
+# Interne Planungsnotizen - gehoeren nicht ins oeffentliche Repo
+PLAN*.md
