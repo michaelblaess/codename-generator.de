@@ -176,7 +176,7 @@ pruefe(
 
 // 7. Permalink reproduziert denselben Stapel.
 const vorher = await seite.locator('ol li').allInnerTexts();
-await seite.getByRole('button', { name: 'LINK', exact: true }).click();
+await seite.getByRole('button', { name: 'ADRESSE KOPIEREN' }).click();
 await seite.waitForTimeout(250);
 const link = await seite.evaluate(() => navigator.clipboard.readText().catch(() => ''));
 if (link) {
@@ -189,6 +189,25 @@ if (link) {
   );
 } else {
   pruefe(false, 'Permalink liess sich nicht aus der Zwischenablage lesen');
+}
+
+// 8. Die Seite muss ohne Scrollen in den Bildschirm passen - auch mit 40
+//    Zeilen und auf einem flachen Fenster. Die Listen rollen in ihrem Kasten.
+for (const groesse of [
+  { width: 1600, height: 900 },
+  { width: 1366, height: 768 },
+  { width: 1280, height: 700 },
+]) {
+  await seite.setViewportSize(groesse);
+  await seite.getByRole('button', { name: '40', exact: true }).click();
+  await seite.waitForTimeout(600);
+  const ueberstand = await seite.evaluate(
+    () => document.documentElement.scrollHeight - window.innerHeight,
+  );
+  pruefe(
+    ueberstand <= 2,
+    `kein Seitenscroll bei ${groesse.width}x${groesse.height} und 40 Zeilen (Ueberstand ${ueberstand}px)`,
+  );
 }
 
 await seite.screenshot({ path: 'smoke.png', fullPage: true });

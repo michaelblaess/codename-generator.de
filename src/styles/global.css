@@ -3,31 +3,32 @@
 @tailwind utilities;
 
 /*
- * Titelbildschirm, 8/16-Bit. Der Rahmen ist der Bildschirmrand des C64, innen
- * liegt das Bild: Copper-Balken wie auf dem Amiga, ein Chromlogo wie bei
- * Uridium oder Goldrunner, die Vorschlaege als Highscore-Tabelle, unten ein
- * Scroller. Bedient wird ueber die Funktionstasten - so wie es die Spiele
- * dieser Zeit gemacht haben.
+ * Goldrunner, Atari ST 1987. Schwarzer Grund, goldenes Schiff, Magenta-Stadt,
+ * gruene Kachelwelt - die Palette kommt aus dem Titelbild und dem Spielfeld,
+ * nicht aus der Fantasie. Die Copper-Balken bleiben, laufen aber in diesen
+ * Farben statt im Regenbogen.
  *
- * Farben sind die VIC-II-Palette (Pepto-Werte), nicht frei erfunden.
+ * Die Seite passt in einen Bildschirm: die Bestenliste rollt in ihrem Kasten,
+ * die Seite selbst nicht.
  */
 :root {
-  --rand: #6c5eb5; /* Hellblau, der Bildschirmrand */
-  --schirm: #352879; /* Blau, die Bildflaeche */
-  --schirm-tief: #241a5c;
-  --hellblau: #8a7ed0;
-  --weiss: #ffffff;
-  --gelb: #d8e26f;
-  --cyan: #8fc4d2;
-  --gruen: #9ad284;
-  --rot: #cc6a5a;
-  --grau: #959595;
-  --schwarz: #10102a;
+  --schwarz: #07070c;
+  --tiefschwarz: #000000;
+  --gold-hell: #ffe9a8;
+  --gold: #e0a82e;
+  --gold-tief: #8a5f14;
+  --magenta: #c13bb0;
+  --magenta-tief: #6a1d6e;
+  --lila: #3a1140;
+  --gruen: #7bb04e;
+  --gruen-tief: #24401c;
+  --creme: #f0e6d2;
+  --dunst: #a08fb0;
 }
 
 html {
-  background: var(--rand);
-  color: var(--weiss);
+  background: var(--tiefschwarz);
+  color: var(--creme);
   font-family: PlexMono, Consolas, monospace;
   color-scheme: dark;
 }
@@ -36,219 +37,173 @@ body {
   margin: 0;
 }
 
-/* --- Bildschirm ----------------------------------------------------------*/
+/* --- Bildschirm ----------------------------------------------------------
+ * Ein Kasten, der in die Fensterhoehe passt. dvh statt vh, damit die
+ * Adressleiste auf dem Telefon nichts abschneidet.
+ */
 .bildschirm {
-  background: var(--schirm);
-  border: 3px solid var(--schwarz);
-  box-shadow: 0 0 0 0.75rem var(--rand), 0 1.5rem 3rem rgb(0 0 0 / 45%);
+  display: grid;
+  grid-template-rows: auto auto auto 1fr auto;
+  height: 100dvh;
+  max-height: 100dvh;
+  background: var(--schwarz);
+  border: 2px solid var(--gold-tief);
+  overflow: hidden;
 }
 
-/* --- Copper-Balken -------------------------------------------------------
- * Der Amiga konnte die Hintergrundfarbe pro Rasterzeile wechseln. Genau das
- * sind diese Baender - sie wandern langsam, wie im Vorspann eines Spiels.
- */
+/* --- Copper-Balken in Goldrunner-Farben ----------------------------------*/
 .copper {
-  height: 4.5rem;
+  height: 2.6rem;
   background: repeating-linear-gradient(
     180deg,
-    #ff5f5f 0 4px,
-    #ff9a3c 4px 8px,
-    #ffd23c 8px 12px,
-    #9ad284 12px 16px,
-    #8fc4d2 16px 20px,
-    #6c5eb5 20px 24px,
-    #352879 24px 28px
+    #ffe9a8 0 3px,
+    #e0a82e 3px 6px,
+    #8a5f14 6px 9px,
+    #c13bb0 9px 12px,
+    #6a1d6e 12px 15px,
+    #7bb04e 15px 18px,
+    #24401c 18px 21px,
+    #07070c 21px 24px
   );
-  background-size: 100% 28px;
-  animation: copper-lauf 2.6s linear infinite;
+  background-size: 100% 24px;
+  animation: copper-lauf 2.4s linear infinite;
 }
 
 @keyframes copper-lauf {
   to {
-    background-position: 0 28px;
+    background-position: 0 24px;
   }
 }
 
-/* --- Alternative Kopfeffekte ---------------------------------------------
- * Zum Vergleichen umschaltbar ueber ?fx=sterne oder ?fx=plasma. Alle drei
- * Effekte belegen dieselbe Flaeche, damit sich das Layout nicht verschiebt.
+/* --- Pixelschrift, sparsam ------------------------------------------------
+ * Nur Titel und kurze Marken tragen die 8-Bit-Schrift. Alles, was man liest,
+ * bleibt in der Textschrift - sonst wird die Seite unlesbar.
  */
-
-/* Sternenfeld: der Hintergrund von Uridium und Goldrunner. Drei Ebenen mit
- * unterschiedlichem Tempo ergeben Tiefe (Parallaxe). */
-.sterne {
-  height: 4.5rem;
-  background-color: var(--schwarz);
-  background-image:
-    radial-gradient(1.5px 1.5px at 12% 30%, #ffffff, transparent),
-    radial-gradient(1.5px 1.5px at 47% 72%, #ffffff, transparent),
-    radial-gradient(1.5px 1.5px at 78% 18%, #d8e26f, transparent),
-    radial-gradient(2px 2px at 22% 62%, #8fc4d2, transparent),
-    radial-gradient(2px 2px at 64% 40%, #ffffff, transparent),
-    radial-gradient(2.5px 2.5px at 88% 78%, #ffffff, transparent),
-    radial-gradient(2.5px 2.5px at 35% 12%, #cc6a5a, transparent);
-  background-size:
-    240px 100%,
-    240px 100%,
-    240px 100%,
-    380px 100%,
-    380px 100%,
-    620px 100%,
-    620px 100%;
-  animation: sterne-flug 9s linear infinite;
-}
-
-@keyframes sterne-flug {
-  to {
-    /* Die hinteren Ebenen wandern langsamer als die vorderen. */
-    background-position:
-      -240px 0,
-      -240px 0,
-      -240px 0,
-      -190px 0,
-      -190px 0,
-      -155px 0,
-      -155px 0;
-  }
-}
-
-/* Plasma: weiche Farbwolken, der Demoszene-Klassiker. Drei ueberlagerte
- * Verlaeufe, die gegeneinander wandern. */
-.plasma {
-  height: 4.5rem;
-  background-color: #241a5c;
-  background-image:
-    radial-gradient(60% 140% at 20% 40%, rgb(204 106 90 / 85%), transparent 70%),
-    radial-gradient(55% 130% at 62% 60%, rgb(143 196 210 / 80%), transparent 70%),
-    radial-gradient(70% 150% at 85% 30%, rgb(216 226 111 / 75%), transparent 72%),
-    linear-gradient(90deg, #6c5eb5, #352879);
-  background-size: 180% 100%, 160% 100%, 200% 100%, 100% 100%;
-  animation: plasma-wogen 11s ease-in-out infinite alternate;
-  filter: saturate(1.15);
-}
-
-@keyframes plasma-wogen {
-  to {
-    background-position: 70% 0, -60% 0, 40% 0, 0 0;
-  }
-}
-
-/* --- Pixelschrift --------------------------------------------------------*/
 .pixel {
   font-family: PressStart, PlexMono, monospace;
   letter-spacing: 0.04em;
-  line-height: 1.6;
+  line-height: 1.5;
 }
 
-/* --- Chromlogo -----------------------------------------------------------
- * Der Verlauf laeuft von oben nach unten durch die Buchstaben, darunter liegt
- * ein harter schwarzer Rand - so sahen die Logos der 16-Bit-Titel aus.
+/* --- Gold ----------------------------------------------------------------
+ * Das Logo von Goldrunner ist gemalt, nicht gerastert: weicher Verlauf von
+ * hellem Gold nach dunkel, dazu ein schmaler dunkler Rand. Deshalb traegt der
+ * Codename die Textschrift und nicht die Pixelschrift.
  */
-.chrom {
-  /* Weiche Uebergaenge statt harter Kanten - der Verlauf soll den Buchstaben
-   * Volumen geben, nicht sie in Streifen zerlegen. */
+.gold {
   background-image: linear-gradient(
     180deg,
-    #ffffff 0%,
-    #f4f8ff 18%,
-    #ffeaa0 36%,
-    #ffc46a 52%,
-    #e8873a 68%,
-    #ffcf7d 84%,
-    #fff6df 100%
+    #fff6dd 0%,
+    #ffe9a8 22%,
+    #e8b93f 48%,
+    #b8842a 68%,
+    #ffd873 88%,
+    #fff6dd 100%
   );
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  filter: drop-shadow(2px 2px 0 var(--schwarz));
+  filter: drop-shadow(0 2px 0 rgb(0 0 0 / 85%));
 }
 
 .held {
-  font-size: clamp(1.6rem, 6.4vw, 4.2rem);
-  line-height: 1.15;
+  font-weight: 600;
+  font-size: clamp(1.5rem, 5.4vw, 3.6rem);
+  line-height: 1.05;
+  letter-spacing: 0.02em;
   word-break: break-word;
 }
 
-/* --- Highscore-Tabelle ---------------------------------------------------*/
+/* --- Rahmen im Panel-Stil ------------------------------------------------
+ * Das Seitenpanel im Spiel ist doppelt gerahmt: Magenta aussen, Gold innen.
+ */
+.panel {
+  border: 2px solid var(--magenta);
+  box-shadow: inset 0 0 0 2px var(--lila);
+  background: #0d0a14;
+}
+
+/* --- Bestenliste ---------------------------------------------------------*/
 .rang {
   display: grid;
-  grid-template-columns: 2.4rem 1fr auto;
+  grid-template-columns: 2.2rem 1fr auto;
   gap: 0.7rem;
-  padding: 0.2rem 0.6rem;
+  padding: 0.16rem 0.6rem;
   width: 100%;
   text-align: left;
-  color: #e8e6ff;
+  color: var(--creme);
 }
 
 .rang:hover {
-  background: var(--schirm-tief);
-  color: var(--weiss);
+  background: var(--lila);
 }
 
 .rang[aria-current='true'] {
-  background: var(--gelb);
+  background: var(--gold);
   color: var(--schwarz);
 }
 
 .rang-nummer {
-  color: var(--gelb);
+  color: var(--magenta);
 }
 
-/* Auf der gelben Zeile waere die gelbe Nummer unsichtbar. */
 .rang[aria-current='true'] .rang-nummer,
-.rang[aria-current='true'] .rang-slug {
-  color: var(--schirm);
+.rang[aria-current='true'] .rang-marke {
+  color: var(--schwarz);
 }
 
-/* --- Funktionstasten -----------------------------------------------------*/
+.rang-marke {
+  color: var(--gruen);
+}
+
+/* --- Tasten --------------------------------------------------------------*/
 .ftaste {
-  border: 2px solid var(--hellblau);
-  background: var(--schirm-tief);
-  color: var(--weiss);
-  padding: 0.3rem 0.65rem;
+  border: 2px solid var(--magenta-tief);
+  background: #140b1a;
+  color: var(--creme);
+  padding: 0.26rem 0.6rem;
 }
 
 .ftaste:hover {
-  background: var(--hellblau);
+  border-color: var(--magenta);
+  background: var(--lila);
 }
 
 .ftaste[aria-pressed='true'] {
-  background: var(--gelb);
-  border-color: var(--gelb);
+  background: var(--gold);
+  border-color: var(--gold-hell);
   color: var(--schwarz);
 }
 
 .ftaste-kuerzel {
-  color: var(--gelb);
+  color: var(--gold);
 }
 
 .ftaste[aria-pressed='true'] .ftaste-kuerzel {
-  color: var(--schirm);
+  color: var(--gold-tief);
 }
 
 .ftaste:focus-visible,
 button:focus-visible,
 a:focus-visible {
-  outline: 3px solid var(--gelb);
+  outline: 2px solid var(--gold-hell);
   outline-offset: 2px;
 }
 
-/* --- Scroller ------------------------------------------------------------
- * Die Laufschrift am unteren Rand. Ohne sie waere es kein Titelbildschirm.
- */
+/* --- Scroller ------------------------------------------------------------*/
 .scroller {
   overflow: hidden;
-  background: var(--schwarz);
-  border-top: 3px solid var(--hellblau);
-  padding: 0.45rem 0;
+  background: var(--tiefschwarz);
+  border-top: 2px solid var(--gold-tief);
+  padding: 0.35rem 0;
 }
 
 .scroller > span {
   display: inline-block;
   white-space: nowrap;
   padding-left: 100%;
-  color: var(--gelb);
-  animation: scrollen 38s linear infinite;
+  color: var(--gold);
+  animation: scrollen 42s linear infinite;
 }
 
 @keyframes scrollen {
@@ -262,68 +217,68 @@ input[type='range'] {
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
-  height: 1.2rem;
+  height: 1.1rem;
   background: transparent;
   cursor: pointer;
 }
 
 input[type='range']::-webkit-slider-runnable-track {
-  height: 0.6rem;
-  background: var(--schirm-tief);
-  border: 2px solid var(--hellblau);
+  height: 0.5rem;
+  background: #140b1a;
+  border: 2px solid var(--magenta-tief);
 }
 
 input[type='range']::-moz-range-track {
-  height: 0.6rem;
-  background: var(--schirm-tief);
-  border: 2px solid var(--hellblau);
+  height: 0.5rem;
+  background: #140b1a;
+  border: 2px solid var(--magenta-tief);
 }
 
 input[type='range']::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 0.9rem;
-  height: 1.2rem;
-  margin-top: -0.35rem;
-  background: var(--gelb);
+  width: 0.85rem;
+  height: 1.1rem;
+  margin-top: -0.32rem;
+  background: var(--gold);
   border: 2px solid var(--schwarz);
 }
 
 input[type='range']::-moz-range-thumb {
-  width: 0.9rem;
-  height: 1.2rem;
+  width: 0.85rem;
+  height: 1.1rem;
   border-radius: 0;
-  background: var(--gelb);
+  background: var(--gold);
   border: 2px solid var(--schwarz);
 }
 
-/* --- Themenliste ---------------------------------------------------------*/
+/* --- Rollbalken ----------------------------------------------------------*/
 .kanal {
   scrollbar-width: thin;
-  scrollbar-color: var(--hellblau) var(--schirm-tief);
+  scrollbar-color: var(--magenta) #0d0a14;
 }
 
 .kanal::-webkit-scrollbar {
-  width: 0.6rem;
+  width: 0.55rem;
 }
 
 .kanal::-webkit-scrollbar-thumb {
-  background: var(--hellblau);
+  background: var(--magenta);
 }
 
 .kanal::-webkit-scrollbar-track {
-  background: var(--schirm-tief);
+  background: #0d0a14;
 }
 
 /* --- Kleinkram -----------------------------------------------------------*/
 .blinker::after {
   content: '';
   display: inline-block;
-  width: 0.6em;
+  width: 0.55em;
   height: 1em;
   margin-left: 0.15em;
   vertical-align: -0.1em;
-  background: var(--gelb);
+  background: var(--gold);
   animation: blinken 0.9s steps(1) infinite;
 }
 
@@ -334,14 +289,12 @@ input[type='range']::-moz-range-thumb {
 }
 
 ::selection {
-  background: var(--gelb);
+  background: var(--gold);
   color: var(--schwarz);
 }
 
 @media (prefers-reduced-motion: reduce) {
   .copper,
-  .sterne,
-  .plasma,
   .scroller > span,
   .blinker::after {
     animation: none;

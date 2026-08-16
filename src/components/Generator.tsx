@@ -43,7 +43,7 @@ function FTaste({
   return (
     <button
       type="button"
-      className="ftaste pixel text-[0.56rem]"
+      className="ftaste pixel text-[0.5rem]"
       aria-pressed={active}
       onClick={onClick}
       title={title}
@@ -93,8 +93,6 @@ export default function Generator() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [themeSlug]);
 
-  // Das aktive Thema muss sichtbar sein - bei 23 Eintraegen liegt es nach einem
-  // Permalink sonst ausserhalb des Sichtfensters.
   useEffect(() => {
     const eintrag = aktivesThemaRef.current;
     const liste = eintrag?.closest('ul');
@@ -117,9 +115,9 @@ export default function Generator() {
     setAktiv(0);
   }, [seed, themeSlug, language, wordCount, mutation, count]);
 
-  // Der Name laeuft Zeichen fuer Zeichen ein - wie ein Titel, der aufgebaut
-  // wird. Das Ziel ist reiner Text, deshalb darf retro-text-effects hier
-  // arbeiten, ohne Bedienelemente zu zerstoeren.
+  // Der Name laeuft Zeichen fuer Zeichen ein. Das Ziel ist reiner Text,
+  // deshalb darf retro-text-effects hier arbeiten, ohne Bedienelemente zu
+  // zerstoeren.
   useEffect(() => {
     if (firstRender.current) {
       firstRender.current = false;
@@ -143,14 +141,14 @@ export default function Generator() {
   const kopieren = useCallback(async (text: string, was: string) => {
     try {
       await navigator.clipboard.writeText(text);
-      setMeldung(`${was} IM SPEICHER: ${text}`);
-      window.setTimeout(() => setMeldung(''), 2200);
+      setMeldung(`${was} kopiert: ${text}`);
+      window.setTimeout(() => setMeldung(''), 2600);
     } catch {
-      setMeldung('SPEICHER GESPERRT - TEXT MARKIEREN');
+      setMeldung('Zwischenablage gesperrt - Text markieren und kopieren');
     }
   }, []);
 
-  const permalink = useCallback(() => {
+  const adresseKopieren = useCallback(() => {
     const p = new URLSearchParams({
       theme: themeSlug,
       lang: language,
@@ -158,7 +156,7 @@ export default function Generator() {
       mut: String(mutation),
       words: String(wordCount),
     });
-    void kopieren(`${window.location.origin}${window.location.pathname}?${p}`, 'LINK');
+    void kopieren(`${window.location.origin}${window.location.pathname}?${p}`, 'Adresse');
   }, [themeSlug, language, seed, mutation, wordCount, kopieren]);
 
   const blaettern = useCallback(
@@ -171,8 +169,6 @@ export default function Generator() {
     [suggestions.length],
   );
 
-  // Funktionstasten wie in den Spielen der Zeit: F1 startet, F3 wechselt die
-  // Sprache, F5 die Wortzahl, F7 nimmt den Namen mit.
   useEffect(() => {
     const aufTaste = (e: KeyboardEvent) => {
       const ziel = e.target as HTMLElement | null;
@@ -182,7 +178,7 @@ export default function Generator() {
         F3: () =>
           setLanguage((l) => LANGUAGES[(LANGUAGES.indexOf(l) + 1) % LANGUAGES.length] ?? l),
         F5: () => setWordCount((w) => (w % 3) + 1),
-        F7: () => held && void kopieren(held.name, 'NAME'),
+        F7: () => held && void kopieren(held.name, 'Name'),
         ArrowRight: () => blaettern(1),
         ArrowLeft: () => blaettern(-1),
         ArrowDown: () => blaettern(1),
@@ -199,44 +195,46 @@ export default function Generator() {
 
   return (
     <>
-      {/* --- Der Titel: ein Name, aufgebaut wie ein Spieltitel --- */}
-      <section className="border-b-4 border-schwarz bg-schirmTief px-4 py-5 text-center sm:px-8">
-        <p className="pixel mb-4 text-[0.56rem] text-hellblau">
+      {/* --- Der Name, gross und in Gold --- */}
+      <section className="border-y-2 border-goldTief bg-black/40 px-4 py-3 text-center">
+        <p className="pixel mb-2 text-[0.5rem] text-magenta">
           {theme?.name.toUpperCase()} · {language.toUpperCase()} · MUT {mutation}% ·{' '}
           {String(aktiv + 1).padStart(2, '0')}/{String(suggestions.length).padStart(2, '0')}
         </p>
-        <p ref={heldRef} className="pixel chrom held">
+        <p ref={heldRef} className="gold held">
           {heldName?.toUpperCase() ?? '...'}
         </p>
-        <p className="mt-4 flex flex-wrap items-center justify-center gap-3 text-[0.8rem]">
+        {/* Der Slug braucht eine Erklaerung - sonst steht da nur ein Wort mit
+            Bindestrichen und niemand weiss, wofuer. */}
+        <p className="mt-2 flex flex-wrap items-baseline justify-center gap-2 text-[0.78rem]">
+          <span className="text-dunst">für Ordner und Adressen:</span>
           <button
             type="button"
-            onClick={() => held && kopieren(held.slug, 'SLUG')}
-            className="text-cyan underline decoration-dotted underline-offset-4 hover:text-gelb"
-            title="Slug mitnehmen"
+            onClick={() => held && kopieren(held.slug, 'Kurzform')}
+            className="text-gruen underline decoration-dotted underline-offset-4 hover:text-goldHell"
+            title="Kurzform kopieren"
           >
             {held?.slug}
           </button>
-          {held?.mutated && <span className="pixel text-[0.56rem] text-rot">MUTIERT</span>}
+          {held?.mutated && <span className="pixel text-[0.5rem] text-magenta">MUTIERT</span>}
         </p>
-        <p className="pixel mt-4 h-4 text-[0.56rem] text-gruen">{meldung}</p>
       </section>
 
-      <div className="grid gap-6 px-4 py-6 sm:px-8 lg:grid-cols-[1fr_15rem]">
-        {/* --- Highscore-Tabelle --- */}
-        <div>
-          <div className="mb-2 flex items-baseline justify-between">
-            <h2 className="pixel text-[0.62rem] text-gelb">TOP {suggestions.length}</h2>
-            <span className="pixel text-[0.56rem] text-hellblau">
+      {/* --- Bestenliste und Bedienfeld, beide in der Bildschirmhoehe --- */}
+      <div className="grid min-h-0 gap-4 px-4 py-3 lg:grid-cols-[1fr_15rem]">
+        <div className="flex min-h-0 flex-col">
+          <div className="mb-1 flex items-baseline justify-between">
+            <h2 className="pixel text-[0.5rem] text-gold">TOP {suggestions.length}</h2>
+            <span className="pixel text-[0.5rem] text-magenta">
               RUNDE {String(seed % 10000).padStart(4, '0')}
             </span>
           </div>
-          <ol className="border-2 border-hellblau bg-schirm">
+          <ol className="kanal panel min-h-0 flex-1 overflow-y-auto">
             {suggestions.map((s, index) => (
               <li key={`${s.slug}-${index}`}>
                 <button
                   type="button"
-                  className="rang text-[0.92rem] tracking-wide"
+                  className="rang text-[0.88rem] tracking-wide"
                   aria-current={index === aktiv}
                   onClick={() => setAktiv(index)}
                 >
@@ -244,7 +242,7 @@ export default function Generator() {
                     {String(index + 1).padStart(2, '0')}.
                   </span>
                   <span className="truncate">{s.name.toUpperCase()}</span>
-                  <span className="rang-slug pixel hidden text-[0.5rem] sm:inline">
+                  <span className="rang-marke pixel hidden text-[0.44rem] sm:inline">
                     {s.mutated ? 'MUT' : ''}
                   </span>
                 </button>
@@ -252,24 +250,32 @@ export default function Generator() {
             ))}
           </ol>
 
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="mt-2 flex flex-wrap items-center gap-2">
             <FTaste kuerzel="F1" onClick={() => setSeed(randomSeed())} title="Neue Namen ziehen">
               NEUE RUNDE
             </FTaste>
-            <FTaste kuerzel="F7" onClick={() => held && kopieren(held.name, 'NAME')}>
-              NAME MITNEHMEN
+            <FTaste
+              kuerzel="F7"
+              onClick={() => held && kopieren(held.name, 'Name')}
+              title="Den grossen Namen in die Zwischenablage legen"
+            >
+              NAME KOPIEREN
             </FTaste>
-            <FTaste onClick={permalink} title="Link zu genau dieser Runde">
-              LINK
+            <FTaste
+              onClick={adresseKopieren}
+              title="Adresse dieser Runde kopieren - oeffnet spaeter genau diese Namen wieder"
+            >
+              ADRESSE KOPIEREN
             </FTaste>
+            <span className="text-[0.72rem] text-gruen">{meldung}</span>
           </div>
         </div>
 
         {/* --- Bedienfeld --- */}
-        <aside className="space-y-5">
-          <section>
-            <h2 className="pixel mb-2 text-[0.56rem] text-gelb">THEMA</h2>
-            <ul className="kanal h-56 overflow-y-auto border-2 border-hellblau bg-schirmTief">
+        <aside className="flex min-h-0 flex-col gap-3 text-[0.76rem]">
+          <section className="flex min-h-0 flex-1 flex-col">
+            <h2 className="pixel mb-1 text-[0.5rem] text-gold">THEMA</h2>
+            <ul className="kanal panel min-h-0 flex-1 overflow-y-auto">
               {available.map((t) => (
                 <li key={t.slug}>
                   <button
@@ -278,14 +284,14 @@ export default function Generator() {
                     onClick={() => setThemeSlug(t.slug)}
                     title={t.description}
                     aria-current={t.slug === themeSlug}
-                    className={`flex w-full items-baseline justify-between gap-2 px-2 py-1 text-left text-[0.76rem] ${
+                    className={`flex w-full items-baseline justify-between gap-2 px-2 py-[0.1rem] text-left ${
                       t.slug === themeSlug
-                        ? 'bg-gelb text-schwarz'
-                        : 'text-cyan hover:bg-schirm hover:text-white'
+                        ? 'bg-gold text-schwarz'
+                        : 'text-creme hover:bg-lila'
                     }`}
                   >
                     <span className="truncate">{t.name}</span>
-                    <span className="text-[0.62rem] tabular-nums opacity-70">{t.words.length}</span>
+                    <span className="text-[0.62rem] tabular-nums opacity-60">{t.words.length}</span>
                   </button>
                 </li>
               ))}
@@ -293,8 +299,8 @@ export default function Generator() {
           </section>
 
           <section>
-            <h2 className="pixel mb-2 text-[0.56rem] text-gelb">F3 SPRACHE</h2>
-            <div className="flex flex-wrap gap-2">
+            <h2 className="pixel mb-1 text-[0.5rem] text-gold">F3 SPRACHE</h2>
+            <div className="flex flex-wrap gap-1">
               {LANGUAGES.map((lang) => (
                 <FTaste key={lang} active={lang === language} onClick={() => setLanguage(lang)}>
                   {LANGUAGE_LABELS[lang] ?? lang.toUpperCase()}
@@ -304,8 +310,8 @@ export default function Generator() {
           </section>
 
           <section>
-            <h2 className="pixel mb-2 text-[0.56rem] text-gelb">F5 WÖRTER</h2>
-            <div className="flex flex-wrap items-center gap-2">
+            <h2 className="pixel mb-1 text-[0.5rem] text-gold">F5 WÖRTER</h2>
+            <div className="flex flex-wrap items-center gap-1">
               {WORDS.map((n) => (
                 <FTaste
                   key={n}
@@ -317,14 +323,14 @@ export default function Generator() {
                 </FTaste>
               ))}
               {Boolean(theme?.patterns.length) && (
-                <span className="text-[0.66rem] text-rot">vom Thema gesetzt</span>
+                <span className="text-[0.62rem] text-magenta">fest</span>
               )}
             </div>
           </section>
 
           <section>
-            <h2 className="pixel mb-2 text-[0.56rem] text-gelb">ZEILEN</h2>
-            <div className="flex flex-wrap gap-2">
+            <h2 className="pixel mb-1 text-[0.5rem] text-gold">ZEILEN</h2>
+            <div className="flex flex-wrap gap-1">
               {COUNTS.map((n) => (
                 <FTaste key={n} active={n === count} onClick={() => setCount(n)}>
                   {n}
@@ -334,9 +340,9 @@ export default function Generator() {
           </section>
 
           <section>
-            <h2 className="pixel mb-2 flex items-baseline justify-between text-[0.56rem] text-gelb">
+            <h2 className="pixel mb-1 flex items-baseline justify-between text-[0.5rem] text-gold">
               <span>MUTATION</span>
-              <span className="tabular-nums text-rot">{mutation}%</span>
+              <span className="tabular-nums text-magenta">{mutation}%</span>
             </h2>
             <input
               type="range"
@@ -346,11 +352,8 @@ export default function Generator() {
               value={mutation}
               onChange={(e) => setMutation(Number(e.target.value))}
               aria-label="Mutation in Prozent"
+              title="Verbiegt die Wörter phonetisch: aus Pegasus wird Pegasos. Betroffene Namen tragen MUT."
             />
-            <p className="mt-1 text-[0.7rem] leading-snug text-cyan">
-              Verbiegt die Wörter phonetisch. Betroffene Namen tragen{' '}
-              <span className="text-rot">MUT</span>.
-            </p>
           </section>
         </aside>
       </div>

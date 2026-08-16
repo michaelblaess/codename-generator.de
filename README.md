@@ -75,6 +75,15 @@ One deliberate difference from the terminal version: Python's `random.Random(see
 be reproduced in JavaScript, so the same seed gives different names here than in the TUI.
 Within this site seeds are stable, which is what permalinks need.
 
+## Design
+
+The current look follows **Goldrunner** (Atari ST, 1987): black ground, gold, magenta
+and green, copper bars along the top edge. The whole page fits one screen - the lists
+scroll inside their boxes, the page itself does not.
+
+The earlier C64 look with rainbow copper bars is kept as a fallback and can be checked
+out at the tag `design-c64-copperbars`.
+
 ## Deployment
 
 Every push to `main` runs the tests, builds and deploys to GitHub Pages. `public/CNAME`

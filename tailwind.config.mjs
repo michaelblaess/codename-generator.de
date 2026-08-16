@@ -4,17 +4,17 @@ export default {
   theme: {
     extend: {
       colors: {
-        // VIC-II-Palette des C64 (Pepto-Werte), siehe global.css.
-        rand: 'var(--rand)',
-        schirm: 'var(--schirm)',
-        schirmTief: 'var(--schirm-tief)',
-        hellblau: 'var(--hellblau)',
-        gelb: 'var(--gelb)',
-        cyan: 'var(--cyan)',
-        gruen: 'var(--gruen)',
-        rot: 'var(--rot)',
-        grau: 'var(--grau)',
+        // Palette aus Goldrunner (Atari ST, 1987), siehe global.css.
         schwarz: 'var(--schwarz)',
+        goldHell: 'var(--gold-hell)',
+        gold: 'var(--gold)',
+        goldTief: 'var(--gold-tief)',
+        magenta: 'var(--magenta)',
+        magentaTief: 'var(--magenta-tief)',
+        lila: 'var(--lila)',
+        gruen: 'var(--gruen)',
+        creme: 'var(--creme)',
+        dunst: 'var(--dunst)',
       },
       fontFamily: {
         mono: ['PlexMono', 'Consolas', 'DejaVu Sans Mono', 'monospace'],

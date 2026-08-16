@@ -76,6 +76,15 @@ Ein bewusster Unterschied zur Terminal-Fassung: Pythons `random.Random(seed)` l�
 JavaScript nicht nachbauen, derselbe Seed liefert hier also andere Namen als in der TUI.
 Innerhalb dieser Seite sind Seeds stabil, und genau das brauchen die Permalinks.
 
+## Gestaltung
+
+Die Optik folgt **Goldrunner** (Atari ST, 1987): schwarzer Grund, Gold, Magenta und
+Gr체n, Copper-Balken an der Oberkante. Die Seite passt in einen Bildschirm - die Listen
+rollen in ihren K채sten, die Seite selbst nicht.
+
+Die fr체here C64-Fassung mit den Regenbogen-Copper-Balken bleibt als R체ckfallebene
+erhalten und liegt auf dem Tag `design-c64-copperbars`.
+
 ## Auslieferung
 
 Jeder Push auf `main` f채hrt die Tests, baut und deployt auf GitHub Pages. `public/CNAME`
