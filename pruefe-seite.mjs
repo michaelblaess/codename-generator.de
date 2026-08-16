@@ -240,6 +240,60 @@ for (const groesse of [
 }
 
 await seite.screenshot({ path: 'smoke.png', fullPage: true });
+
+// 9. Die Datenschutzerklaerung behauptet: keine Cookies, kein Speicher. Das
+//    muss messbar sein, sonst steht dort eine unwahre Aussage.
+await seite.setViewportSize({ width: 1400, height: 1000 });
+await seite.goto(URL_BASIS, { waitUntil: 'networkidle' });
+await held.waitFor({ timeout: 10000 });
+await seite.getByRole('button', { name: 'NEUE RUNDE' }).click();
+await seite.waitForTimeout(400);
+const spuren = await seite.evaluate(() => ({
+  cookies: document.cookie,
+  lokal: window.localStorage.length,
+  sitzung: window.sessionStorage.length,
+}));
+pruefe(
+  spuren.cookies === '' && spuren.lokal === 0 && spuren.sitzung === 0,
+  `keine Cookies, kein Speicher (cookie "${spuren.cookies}", local ${spuren.lokal}, session ${spuren.sitzung})`,
+);
+
+// 10. Rechtsseiten und Sprachfassungen. Die Pflichtangaben muessen von der
+//     Startseite aus in einem Klick erreichbar sein - Rechtstexte, die man
+//     nur ueber die Adresszeile findet, erfuellen § 5 DDG nicht.
+for (const [name, muster] of [
+  ['IMPRESSUM', /§ 5 DDG/],
+  ['DATENSCHUTZ', /DSGVO/],
+]) {
+  await seite.goto(URL_BASIS, { waitUntil: 'networkidle' });
+  await seite.getByRole('link', { name, exact: true }).click();
+  await seite.waitForLoadState('networkidle');
+  const text = await seite.locator('body').innerText();
+  pruefe(muster.test(text), `${name} erreichbar und traegt ${muster}`);
+  pruefe(
+    text.includes('Kurze Str. 2') || text.includes('Michael Blaess'),
+    `${name} nennt den Verantwortlichen`,
+  );
+}
+
+// Sprachumschalter: von der deutschen Startseite nach /en/ und zurueck.
+await seite.goto(URL_BASIS, { waitUntil: 'networkidle' });
+pruefe(
+  (await seite.locator('html').getAttribute('lang')) === 'de',
+  'die deutsche Fassung traegt lang="de"',
+);
+await seite.getByRole('link', { name: 'ENGLISH', exact: true }).click();
+await seite.waitForLoadState('networkidle');
+await held.waitFor({ timeout: 10000 });
+const enLang = await seite.locator('html').getAttribute('lang');
+const enKopf = await seite.locator('#statuszeile').locator('xpath=..').innerText();
+pruefe(enLang === 'en', `Umschalter fuehrt auf die englische Fassung (lang="${enLang}")`);
+pruefe(/THEMES/.test(enKopf), `englische Kopfzeile: "${enKopf.replace(/\s+/g, ' ').trim()}"`);
+pruefe(
+  (await seite.getByRole('button', { name: 'NEW ROUND' }).count()) === 1,
+  'englische Beschriftung im Bedienfeld',
+);
+
 await browser.close();
 
 if (fehler.length > 0) {

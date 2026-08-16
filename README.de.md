@@ -32,6 +32,12 @@ Browser - kein Backend, kein Tracking, nichts verlässt die Seite.
   `Pegasus -> Pegasos`. Ein `*` markiert einen mutierten Vorschlag.
 - **Permalinks.** Jeder Stapel hat einen Seed - der Knopf `Link` kopiert eine URL, die
   genau diesen Stapel wieder erzeugt.
+- **Zwei Oberflächensprachen.** Deutsch liegt unter `/`, Englisch unter `/en/`, beide aus
+  einem Wörterbuch (`src/i18n/ui.ts`). Die Oberflächensprache ist unabhängig von der
+  Sprache der erzeugten Namen, die im Bedienfeld umschaltbar bleibt.
+- **Rechtsseiten**: Impressum nach § 5 DDG und eine Datenschutzerklärung, die beschreibt,
+  was die Seite wirklich tut - keine Cookies, kein Speicher, keine Statistik. Der
+  Smoketest misst diese Aussage nach, statt ihr zu glauben.
 - **Retro-Effekte** über [retro-text-effects](https://github.com/michaelblaess/retro-text-effects.js),
   mit Rücksicht auf `prefers-reduced-motion`.
 

@@ -10,6 +10,7 @@ import {
   visibleThemes,
 } from '../lib/generator';
 import { randomSeed } from '../lib/rng';
+import { UI, type UiSprache } from '../i18n/ui';
 
 const LANGUAGE_LABELS: Record<string, string> = { en: 'ENGLISH', de: 'DEUTSCH' };
 const COUNTS = [10, 20, 30, 40];
@@ -55,13 +56,34 @@ function FTaste({
   );
 }
 
-export default function Generator() {
-  const [language, setLanguage] = useState<string>(DEFAULT_LANGUAGE);
-  const [themeSlug, setThemeSlug] = useState<string>('random');
-  const [mutation, setMutation] = useState<number>(35);
-  const [wordCount, setWordCount] = useState<number>(2);
+export default function Generator({ sprache }: { sprache: UiSprache }) {
+  const t = UI[sprache];
+  // Der Zustand aus der Adresse wird beim ERSTEN Rendern gelesen, nicht in
+  // einem Effekt. Als Effekt lief er gegen den Themen-Abgleich weiter unten:
+  // beide setzen im selben Durchlauf das Thema, der Abgleich gewinnt, und der
+  // Permalink lieferte einen anderen Stapel.
+  const [start] = useState(() => readUrlState());
+  // Die Namenssprache startet in der Sprache der Oberflaeche, bleibt aber
+  // getrennt umschaltbar.
+  const [language, setLanguage] = useState<string>(() => {
+    if (start?.language && LANGUAGES.includes(start.language)) return start.language;
+    return LANGUAGES.includes(sprache) ? sprache : DEFAULT_LANGUAGE;
+  });
+  const [themeSlug, setThemeSlug] = useState<string>(() =>
+    start?.theme && themeBySlug(start.theme) ? start.theme : 'random',
+  );
+  const [mutation, setMutation] = useState<number>(() =>
+    start?.mutation !== null && start?.mutation !== undefined
+      ? Math.max(0, Math.min(100, start.mutation))
+      : 35,
+  );
+  const [wordCount, setWordCount] = useState<number>(() =>
+    start?.words !== null && start?.words !== undefined
+      ? Math.max(1, Math.min(3, start.words))
+      : 2,
+  );
   const [count, setCount] = useState<number>(20);
-  const [seed, setSeed] = useState<number>(() => randomSeed());
+  const [seed, setSeed] = useState<number>(() => start?.seed ?? randomSeed());
   const [aktiv, setAktiv] = useState<number>(0);
   // Die Statuszeile antwortet wie ein Heimcomputer: im Ruhezustand READY.,
   // nach einer Aktion die Rueckmeldung, danach wieder READY.
@@ -84,22 +106,18 @@ export default function Generator() {
   }, []);
 
   useEffect(() => {
-    const state = readUrlState();
-    if (!state) return;
-    if (state.language && LANGUAGES.includes(state.language)) setLanguage(state.language);
-    if (state.theme && themeBySlug(state.theme)) setThemeSlug(state.theme);
-    if (state.seed !== null) setSeed(state.seed);
-    if (state.mutation !== null) setMutation(Math.max(0, Math.min(100, state.mutation)));
-    if (state.words !== null) setWordCount(Math.max(1, Math.min(3, state.words)));
-  }, []);
-
-  useEffect(() => {
     if (!available.some((t) => t.slug === themeSlug)) {
       setThemeSlug(available[0]?.slug ?? 'random');
     }
   }, [available, themeSlug]);
 
+  const themaGewechselt = useRef(false);
   useEffect(() => {
+    // Beim ersten Lauf hat die Adresse Vorrang, sonst traegt ein Permalink mit
+    // ?mut=0 trotzdem die Vorgabe des Themas.
+    const ausAdresse = !themaGewechselt.current && start?.mutation !== null;
+    themaGewechselt.current = true;
+    if (ausAdresse) return;
     if (theme?.defaultMutation !== null && theme?.defaultMutation !== undefined) {
       setMutation(theme.defaultMutation);
     }
@@ -151,15 +169,18 @@ export default function Generator() {
     return () => lauf?.cancel?.();
   }, [heldName]);
 
-  const kopieren = useCallback(async (text: string, was: string) => {
+  const kopieren = useCallback(
+    async (text: string, was: string) => {
     try {
       await navigator.clipboard.writeText(text);
-      setMeldung(`${was.toUpperCase()} KOPIERT: ${text}`);
+      setMeldung(t.meldungKopiert(was, text));
       window.setTimeout(() => setMeldung(''), 2800);
     } catch {
-      setMeldung('ZWISCHENABLAGE GESPERRT - TEXT MARKIEREN');
-    }
-  }, []);
+      setMeldung(t.meldungGesperrt);
+      }
+    },
+    [t],
+  );
 
   const adresseKopieren = useCallback(() => {
     const p = new URLSearchParams({
@@ -169,7 +190,7 @@ export default function Generator() {
       mut: String(mutation),
       words: String(wordCount),
     });
-    void kopieren(`${window.location.origin}${window.location.pathname}?${p}`, 'Adresse');
+    void kopieren(`${window.location.origin}${window.location.pathname}?${p}`, t.wortAdresse);
   }, [themeSlug, language, seed, mutation, wordCount, kopieren]);
 
   const blaettern = useCallback(
@@ -191,7 +212,7 @@ export default function Generator() {
         F3: () =>
           setLanguage((l) => LANGUAGES[(LANGUAGES.indexOf(l) + 1) % LANGUAGES.length] ?? l),
         F5: () => setWordCount((w) => (w % 3) + 1),
-        F7: () => held && void kopieren(held.name, 'Name'),
+        F7: () => held && void kopieren(held.name, t.wortName),
         ArrowRight: () => blaettern(1),
         ArrowLeft: () => blaettern(-1),
         ArrowDown: () => blaettern(1),
@@ -211,7 +232,7 @@ export default function Generator() {
       {statusFeld &&
         createPortal(
           <>
-            {meldung || 'READY.'}
+            {meldung || t.bereit}
             {meldung ? null : <span className="blinker" />}
           </>,
           statusFeld,
@@ -229,28 +250,28 @@ export default function Generator() {
         {/* Der Slug braucht eine Erklaerung - sonst steht da nur ein Wort mit
             Bindestrichen und niemand weiss, wofuer. */}
         <p className="mt-2 flex flex-wrap items-baseline justify-center gap-2 text-[0.78rem]">
-          <span className="text-dunst">für Ordner und Adressen:</span>
+          <span className="text-dunst">{t.fuerOrdner}</span>
           <button
             type="button"
-            onClick={() => held && kopieren(held.slug, 'Kurzform')}
+            onClick={() => held && kopieren(held.slug, t.wortKurzform)}
             className="text-gruen underline decoration-dotted underline-offset-4 hover:text-goldHell"
-            title="Kurzform kopieren"
+            title={t.kurzformKopieren}
           >
             {held?.slug}
           </button>
-          {held?.mutated && <span className="pixel text-[0.5rem] text-magenta">MUTIERT</span>}
+          {held?.mutated && <span className="pixel text-[0.5rem] text-magenta">{t.mutiert}</span>}
         </p>
       </section>
 
       {/* --- Bedienfeld und Bestenliste, beide in der Bildschirmhoehe.
           Das Bedienfeld steht links: dort sucht die Hand zuerst, und die
           Liste rechts daneben bleibt beim Blaettern ruhig stehen. --- */}
-      <div className="grid min-h-0 gap-4 px-4 py-3 lg:grid-cols-[15rem_1fr]">
+      <div className="waechst grid gap-4 px-4 py-3 lg:grid-cols-[15rem_1fr]">
         <div className="flex min-h-0 flex-col lg:order-2">
           <div className="mb-1 flex items-baseline justify-between">
-            <h2 className="pixel text-[0.5rem] text-gold">TOP {suggestions.length}</h2>
+            <h2 className="pixel text-[0.5rem] text-gold">{t.top(suggestions.length)}</h2>
             <span className="pixel text-[0.5rem] text-magenta">
-              RUNDE {String(seed % 10000).padStart(4, '0')}
+              {t.runde(String(seed % 10000).padStart(4, '0'))}
             </span>
           </div>
           <ol className="kanal panel min-h-0 flex-1 overflow-y-auto">
@@ -279,33 +300,36 @@ export default function Generator() {
               kuerzel="F1"
               onClick={() => {
                 setSeed(randomSeed());
-                setMeldung('NEUE RUNDE');
+                setMeldung(t.meldungNeueRunde);
                 window.setTimeout(() => setMeldung(''), 900);
               }}
-              title="Neue Namen ziehen"
+              title={t.titelNeueRunde}
             >
-              NEUE RUNDE
+              {t.neueRunde}
             </FTaste>
             <FTaste
               kuerzel="F7"
-              onClick={() => held && kopieren(held.name, 'Name')}
-              title="Den grossen Namen in die Zwischenablage legen"
+              onClick={() => held && kopieren(held.name, t.wortName)}
+              title={t.titelNameKopieren}
             >
-              NAME KOPIEREN
+              {t.nameKopieren}
             </FTaste>
             <FTaste
               onClick={adresseKopieren}
-              title="Adresse dieser Runde kopieren - oeffnet spaeter genau diese Namen wieder"
+              title={t.titelAdresseKopieren}
             >
-              ADRESSE KOPIEREN
+              {t.adresseKopieren}
             </FTaste>
           </div>
         </div>
 
         {/* --- Bedienfeld --- */}
-        <aside className="flex min-h-0 flex-col gap-3 text-[0.76rem] lg:order-1">
+        {/* Die Themenliste traegt dieselbe Groesse wie die Bestenliste
+            (0.88rem) - zwei Listen nebeneinander in verschiedenen Groessen
+            sehen nach Versehen aus. */}
+        <aside className="flex min-h-0 flex-col gap-3 text-[0.88rem] lg:order-1">
           <section className="flex min-h-0 flex-1 flex-col">
-            <h2 className="pixel mb-1 text-[0.5rem] text-gold">THEMA</h2>
+            <h2 className="pixel mb-1 text-[0.5rem] text-gold">{t.thema}</h2>
             <ul className="kanal panel min-h-0 flex-1 overflow-y-auto">
               {available.map((t) => (
                 <li key={t.slug}>
@@ -330,7 +354,7 @@ export default function Generator() {
           </section>
 
           <section>
-            <h2 className="pixel mb-1 text-[0.5rem] text-gold">F3 SPRACHE</h2>
+            <h2 className="pixel mb-1 text-[0.5rem] text-gold">{t.sprache}</h2>
             <div className="flex flex-wrap gap-1">
               {LANGUAGES.map((lang) => (
                 <FTaste key={lang} active={lang === language} onClick={() => setLanguage(lang)}>
@@ -341,26 +365,26 @@ export default function Generator() {
           </section>
 
           <section>
-            <h2 className="pixel mb-1 text-[0.5rem] text-gold">F5 WÖRTER</h2>
+            <h2 className="pixel mb-1 text-[0.5rem] text-gold">{t.woerter}</h2>
             <div className="flex flex-wrap items-center gap-1">
               {WORDS.map((n) => (
                 <FTaste
                   key={n}
                   active={n === wordCount}
                   onClick={() => setWordCount(n)}
-                  title={theme?.patterns.length ? 'Dieses Thema gibt die Wortzahl vor' : undefined}
+                  title={theme?.patterns.length ? t.titelWortzahlFest : undefined}
                 >
                   {n}
                 </FTaste>
               ))}
               {Boolean(theme?.patterns.length) && (
-                <span className="text-[0.62rem] text-magenta">fest</span>
+                <span className="text-[0.62rem] text-magenta">{t.fest}</span>
               )}
             </div>
           </section>
 
           <section>
-            <h2 className="pixel mb-1 text-[0.5rem] text-gold">ZEILEN</h2>
+            <h2 className="pixel mb-1 text-[0.5rem] text-gold">{t.zeilen}</h2>
             <div className="flex flex-wrap gap-1">
               {COUNTS.map((n) => (
                 <FTaste key={n} active={n === count} onClick={() => setCount(n)}>
@@ -372,7 +396,7 @@ export default function Generator() {
 
           <section>
             <h2 className="pixel mb-1 flex items-baseline justify-between text-[0.5rem] text-gold">
-              <span>MUTATION</span>
+              <span>{t.mutation}</span>
               <span className="tabular-nums text-magenta">{mutation}%</span>
             </h2>
             <input
@@ -382,8 +406,8 @@ export default function Generator() {
               step={5}
               value={mutation}
               onChange={(e) => setMutation(Number(e.target.value))}
-              aria-label="Mutation in Prozent"
-              title="Verbiegt die Wörter phonetisch: aus Pegasus wird Pegasos. Betroffene Namen tragen MUT."
+              aria-label={t.mutation}
+              title={t.titelMutation}
             />
           </section>
         </aside>

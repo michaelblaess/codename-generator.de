@@ -1,0 +1,46 @@
+---
+/*
+ * Schmale Leiste ueber der Laufschrift: Rechtslinks links, Sprachumschalter
+ * rechts.
+ *
+ * Die Pflichtangaben stehen bewusst NICHT in der Laufschrift. Sie muessen
+ * leicht erkennbar und unmittelbar erreichbar sein, und ein vorbeiziehender
+ * Text ist beides nicht.
+ */
+import { UI, pfad, type UiSprache } from '../i18n/ui';
+
+interface Props {
+  sprache: UiSprache;
+  seite: 'start' | 'impressum' | 'datenschutz';
+}
+
+const { sprache, seite } = Astro.props;
+const t = UI[sprache];
+const andere: UiSprache = sprache === 'de' ? 'en' : 'de';
+---
+
+<footer
+  class="pixel flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t-2 border-goldTief px-4 py-2 text-[0.5rem]"
+>
+  <nav class="flex flex-wrap items-center gap-x-3 gap-y-1">
+    <a href={pfad('impressum', sprache)} class="fussweg" aria-current={seite === 'impressum'}>
+      {t.impressum}
+    </a>
+    <span class="text-goldTief" aria-hidden="true">·</span>
+    <a href={pfad('datenschutz', sprache)} class="fussweg" aria-current={seite === 'datenschutz'}>
+      {t.datenschutz}
+    </a>
+    <span class="text-goldTief" aria-hidden="true">·</span>
+    <a
+      href="https://github.com/michaelblaess/codename-generator"
+      class="fussweg"
+      rel="noopener noreferrer"
+      target="_blank">{t.quellcode}</a
+    >
+  </nav>
+
+  <!-- Der Umschalter springt auf dieselbe Seite in der anderen Sprache. -->
+  <a href={pfad(seite, andere)} class="fussweg" hreflang={andere} lang={andere}>
+    {UI[sprache].andereSpracheName}
+  </a>
+</footer>

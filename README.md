@@ -31,6 +31,12 @@ tracking, nothing leaves the page.
   a mutated suggestion.
 - **Permalinks.** Every batch has a seed - the `Link` button copies a URL that reproduces
   exactly that batch.
+- **Two interface languages.** German lives at `/`, English at `/en/`, both built from
+  one dictionary (`src/i18n/ui.ts`). The interface language is separate from the language
+  of the generated names, which stays switchable in the panel.
+- **Legal pages** for the German requirements: imprint under § 5 DDG and a privacy policy
+  that describes what the site actually does - no cookies, no storage, no analytics. The
+  smoketest measures that claim instead of trusting it.
 - **Retro effects** via [retro-text-effects](https://github.com/michaelblaess/retro-text-effects.js),
   respecting `prefers-reduced-motion`.
 

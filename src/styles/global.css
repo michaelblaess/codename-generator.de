@@ -42,8 +42,12 @@ body {
  * Adressleiste auf dem Telefon nichts abschneidet.
  */
 .bildschirm {
-  display: grid;
-  grid-template-rows: auto auto auto 1fr auto;
+  /* Spalte statt Raster: die Seiten haben unterschiedlich viele Abschnitte
+   * (Startseite sechs, Rechtsseite vier), und eine feste Zeilenvorgabe wuerde
+   * bei jeder neuen Zeile stillschweigend falsch liegen. Der dehnbare
+   * Abschnitt traegt die Klasse .waechst. */
+  display: flex;
+  flex-direction: column;
   height: 100dvh;
   max-height: 100dvh;
   /* Auf breiten Schirmen nicht ueber die ganze Flaeche laufen lassen - der
@@ -53,6 +57,27 @@ body {
   background: var(--schwarz);
   border: 2px solid var(--gold-tief);
   overflow: hidden;
+}
+
+.waechst {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* --- Wege in der Fusszeile und in Rechtstexten ---------------------------*/
+.fussweg {
+  color: var(--gruen);
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 3px;
+}
+
+.fussweg:hover {
+  color: var(--gold-hell);
+}
+
+.fussweg[aria-current='true'] {
+  color: var(--gold);
 }
 
 /* --- Copper-Balken in Goldrunner-Farben ----------------------------------*/
