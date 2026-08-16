@@ -38,8 +38,15 @@ const scroller = [
       <h1 class="pixel gold text-[0.8rem] sm:text-[1.05rem]">
         **** CODENAME GENERATOR ****
       </h1>
-      <p class="pixel text-[0.5rem] text-magenta">
-        {list.length} THEMEN, {wordCount} WÖRTER FREI
+      <p class="pixel flex items-baseline gap-2 text-[0.5rem] text-magenta">
+        <span>{list.length} THEMEN, {wordCount} WÖRTER FREI</span>
+        <span aria-hidden="true" class="text-goldTief">·</span>
+        <!--
+          Die Statuszeile gehoert dem Generator, steht aber hier oben. React
+          haengt sich per Portal in dieses Feld - bis dahin traegt es READY.
+          als Platzhalter, damit die Kopfzeile nie leer springt.
+        -->
+        <span id="statuszeile" class="text-gruen" aria-live="polite">READY.</span>
       </p>
     </header>
 

@@ -191,6 +191,35 @@ if (link) {
   pruefe(false, 'Permalink liess sich nicht aus der Zwischenablage lesen');
 }
 
+// 7b. Die Statuszeile haengt per Portal in der Kopfzeile. Zwei Dinge koennen
+//     schiefgehen: der Platzhalter bleibt stehen (dann steht READY. doppelt),
+//     oder das Portal findet sein Feld nicht (dann meldet die Seite nichts).
+const status = seite.locator('#statuszeile');
+const statusText = (await status.innerText()).trim();
+pruefe(statusText === 'READY.', `Statuszeile im Ruhezustand: "${statusText}"`);
+
+const kastenStatus = await status.boundingBox();
+const kastenHeld = await held.boundingBox();
+pruefe(
+  kastenStatus !== null && kastenHeld !== null && kastenStatus.y < kastenHeld.y,
+  `Statuszeile steht oben (y=${Math.round(kastenStatus?.y ?? -1)} vor Name y=${Math.round(kastenHeld?.y ?? -1)})`,
+);
+
+await seite.getByRole('button', { name: 'NEUE RUNDE' }).click();
+await seite.waitForTimeout(120);
+pruefe(
+  (await status.innerText()).trim().includes('NEUE RUNDE'),
+  'Statuszeile meldet die Aktion oben in der Kopfzeile',
+);
+
+// 7c. Das Bedienfeld steht links von der Bestenliste.
+const kastenListe = await seite.locator('ol.panel').boundingBox();
+const kastenThema = await seite.locator('aside ul.panel').boundingBox();
+pruefe(
+  kastenThema !== null && kastenListe !== null && kastenThema.x < kastenListe.x,
+  `Bedienfeld links (x=${Math.round(kastenThema?.x ?? -1)}) vor Bestenliste (x=${Math.round(kastenListe?.x ?? -1)})`,
+);
+
 // 8. Die Seite muss ohne Scrollen in den Bildschirm passen - auch mit 40
 //    Zeilen und auf einem flachen Fenster. Die Listen rollen in ihrem Kasten.
 for (const groesse of [

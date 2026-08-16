@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   DEFAULT_LANGUAGE,
   LANGUAGES,
@@ -65,12 +66,22 @@ export default function Generator() {
   // Die Statuszeile antwortet wie ein Heimcomputer: im Ruhezustand READY.,
   // nach einer Aktion die Rueckmeldung, danach wieder READY.
   const [meldung, setMeldung] = useState<string>('');
+  const [statusFeld, setStatusFeld] = useState<HTMLElement | null>(null);
   const heldRef = useRef<HTMLParagraphElement>(null);
   const aktivesThemaRef = useRef<HTMLButtonElement>(null);
   const firstRender = useRef(true);
 
   const available: WordList[] = useMemo(() => visibleThemes(language), [language]);
   const theme = themeBySlug(themeSlug);
+
+  // Das Feld in der Kopfzeile uebernehmen. Der Platzhalter muss raus, sonst
+  // stuenden Platzhalter und Portal-Inhalt nebeneinander.
+  useEffect(() => {
+    const feld = document.getElementById('statuszeile');
+    if (!feld) return;
+    feld.textContent = '';
+    setStatusFeld(feld);
+  }, []);
 
   useEffect(() => {
     const state = readUrlState();
@@ -197,6 +208,15 @@ export default function Generator() {
 
   return (
     <>
+      {statusFeld &&
+        createPortal(
+          <>
+            {meldung || 'READY.'}
+            {meldung ? null : <span className="blinker" />}
+          </>,
+          statusFeld,
+        )}
+
       {/* --- Der Name, gross und in Gold --- */}
       <section className="border-y-2 border-goldTief bg-black/40 px-4 py-3 text-center">
         <p className="pixel mb-2 text-[0.5rem] text-magenta">
@@ -222,9 +242,11 @@ export default function Generator() {
         </p>
       </section>
 
-      {/* --- Bestenliste und Bedienfeld, beide in der Bildschirmhoehe --- */}
-      <div className="grid min-h-0 gap-4 px-4 py-3 lg:grid-cols-[1fr_15rem]">
-        <div className="flex min-h-0 flex-col">
+      {/* --- Bedienfeld und Bestenliste, beide in der Bildschirmhoehe.
+          Das Bedienfeld steht links: dort sucht die Hand zuerst, und die
+          Liste rechts daneben bleibt beim Blaettern ruhig stehen. --- */}
+      <div className="grid min-h-0 gap-4 px-4 py-3 lg:grid-cols-[15rem_1fr]">
+        <div className="flex min-h-0 flex-col lg:order-2">
           <div className="mb-1 flex items-baseline justify-between">
             <h2 className="pixel text-[0.5rem] text-gold">TOP {suggestions.length}</h2>
             <span className="pixel text-[0.5rem] text-magenta">
@@ -277,15 +299,11 @@ export default function Generator() {
             >
               ADRESSE KOPIEREN
             </FTaste>
-            <span className="pixel ml-auto text-[0.5rem] text-gruen" aria-live="polite">
-              {meldung || 'READY.'}
-              {meldung ? null : <span className="blinker" />}
-            </span>
           </div>
         </div>
 
         {/* --- Bedienfeld --- */}
-        <aside className="flex min-h-0 flex-col gap-3 text-[0.76rem]">
+        <aside className="flex min-h-0 flex-col gap-3 text-[0.76rem] lg:order-1">
           <section className="flex min-h-0 flex-1 flex-col">
             <h2 className="pixel mb-1 text-[0.5rem] text-gold">THEMA</h2>
             <ul className="kanal panel min-h-0 flex-1 overflow-y-auto">
