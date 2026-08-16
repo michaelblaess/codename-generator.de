@@ -6,6 +6,9 @@ import '../styles/global.css';
 // zurueck.
 import plexMono from '../assets/fonts/plexmono.woff2';
 import pressStart from '../assets/fonts/pressstart.woff2';
+// Bungee traegt nur den grossen Namen - ein Schriftzug im Ton eines
+// Spielhallen-Logos. Alles Lesbare bleibt in PlexMono.
+import bungee from '../assets/fonts/bungee.woff2';
 
 interface Props {
   title: string;
@@ -40,9 +43,10 @@ const favicon = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/favicon.svg`;
     <meta name="theme-color" content="#352879" />
     <link rel="preload" href={plexMono} as="font" type="font/woff2" crossorigin />
     <link rel="preload" href={pressStart} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={bungee} as="font" type="font/woff2" crossorigin />
     <style
       is:inline
-      set:html={`@font-face{font-family:PlexMono;src:url("${plexMono}") format("woff2");font-weight:400 600;font-display:swap}@font-face{font-family:PressStart;src:url("${pressStart}") format("woff2");font-weight:400;font-display:swap}`}
+      set:html={`@font-face{font-family:PlexMono;src:url("${plexMono}") format("woff2");font-weight:400 600;font-display:swap}@font-face{font-family:PressStart;src:url("${pressStart}") format("woff2");font-weight:400;font-display:swap}@font-face{font-family:Bungee;src:url("${bungee}") format("woff2");font-weight:400;font-display:swap}`}
     ></style>
   </head>
   <body class="font-mono">

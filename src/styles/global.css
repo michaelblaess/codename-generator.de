@@ -136,10 +136,14 @@ body {
 }
 
 .held {
-  font-weight: 600;
-  font-size: clamp(1.5rem, 5.4vw, 3.6rem);
-  line-height: 1.05;
-  letter-spacing: 0.02em;
+  /* Bungee ist deutlich breiter als PlexMono, deshalb ein kleinerer Deckel und
+   * ein enger gestelltes Sperrmass - sonst laeuft ein langer Name wie
+   * "MUEHLENGEIST FAEHRTENLESER" aus dem Kasten. */
+  font-family: Bungee, PlexMono, monospace;
+  font-weight: 400;
+  font-size: clamp(1.15rem, 3.9vw, 2.6rem);
+  line-height: 1.12;
+  letter-spacing: 0;
   word-break: break-word;
 }
 

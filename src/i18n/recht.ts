@@ -59,7 +59,7 @@ export const IMPRESSUM: Record<UiSprache, Rechtstext> = {
         titel: 'Urheberrecht',
         zeilen: [
           '© 2026 Michael Blaess. Der Quellcode steht unter der Apache License 2.0 und liegt öffentlich auf GitHub.',
-          'Die Schrift Press Start 2P steht unter der SIL Open Font License, IBM Plex Mono unter der SIL Open Font License.',
+          'Die Schriften Press Start 2P, Bungee und IBM Plex Mono stehen unter der SIL Open Font License.',
         ],
       },
       {
@@ -101,7 +101,7 @@ export const IMPRESSUM: Record<UiSprache, Rechtstext> = {
         titel: 'Copyright',
         zeilen: [
           '© 2026 Michael Blaess. The source code is Apache License 2.0 and public on GitHub.',
-          'Press Start 2P and IBM Plex Mono are licensed under the SIL Open Font License.',
+          'Press Start 2P, Bungee and IBM Plex Mono are licensed under the SIL Open Font License.',
         ],
       },
       {
