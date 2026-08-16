@@ -46,6 +46,10 @@ body {
   grid-template-rows: auto auto auto 1fr auto;
   height: 100dvh;
   max-height: 100dvh;
+  /* Auf breiten Schirmen nicht ueber die ganze Flaeche laufen lassen - der
+   * Kasten steht mittig, links und rechts bleibt Schwarz stehen. */
+  width: min(100%, 78rem);
+  margin-inline: auto;
   background: var(--schwarz);
   border: 2px solid var(--gold-tief);
   overflow: hidden;

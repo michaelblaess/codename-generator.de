@@ -62,6 +62,8 @@ export default function Generator() {
   const [count, setCount] = useState<number>(20);
   const [seed, setSeed] = useState<number>(() => randomSeed());
   const [aktiv, setAktiv] = useState<number>(0);
+  // Die Statuszeile antwortet wie ein Heimcomputer: im Ruhezustand READY.,
+  // nach einer Aktion die Rueckmeldung, danach wieder READY.
   const [meldung, setMeldung] = useState<string>('');
   const heldRef = useRef<HTMLParagraphElement>(null);
   const aktivesThemaRef = useRef<HTMLButtonElement>(null);
@@ -141,10 +143,10 @@ export default function Generator() {
   const kopieren = useCallback(async (text: string, was: string) => {
     try {
       await navigator.clipboard.writeText(text);
-      setMeldung(`${was} kopiert: ${text}`);
-      window.setTimeout(() => setMeldung(''), 2600);
+      setMeldung(`${was.toUpperCase()} KOPIERT: ${text}`);
+      window.setTimeout(() => setMeldung(''), 2800);
     } catch {
-      setMeldung('Zwischenablage gesperrt - Text markieren und kopieren');
+      setMeldung('ZWISCHENABLAGE GESPERRT - TEXT MARKIEREN');
     }
   }, []);
 
@@ -251,7 +253,15 @@ export default function Generator() {
           </ol>
 
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            <FTaste kuerzel="F1" onClick={() => setSeed(randomSeed())} title="Neue Namen ziehen">
+            <FTaste
+              kuerzel="F1"
+              onClick={() => {
+                setSeed(randomSeed());
+                setMeldung('NEUE RUNDE');
+                window.setTimeout(() => setMeldung(''), 900);
+              }}
+              title="Neue Namen ziehen"
+            >
               NEUE RUNDE
             </FTaste>
             <FTaste
@@ -267,7 +277,10 @@ export default function Generator() {
             >
               ADRESSE KOPIEREN
             </FTaste>
-            <span className="text-[0.72rem] text-gruen">{meldung}</span>
+            <span className="pixel ml-auto text-[0.5rem] text-gruen" aria-live="polite">
+              {meldung || 'READY.'}
+              {meldung ? null : <span className="blinker" />}
+            </span>
           </div>
         </div>
 
