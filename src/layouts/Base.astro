@@ -5,6 +5,7 @@ import '../styles/global.css';
 // /codename-generator.de/ ins Leere und die Seite faellt still auf Consolas
 // zurueck.
 import plexMono from '../assets/fonts/plexmono.woff2';
+import pressStart from '../assets/fonts/pressstart.woff2';
 
 interface Props {
   title: string;
@@ -33,9 +34,13 @@ const favicon = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/favicon.svg`;
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
     <meta name="twitter:card" content="summary" />
-    <meta name="theme-color" content="#23201c" />
+    <meta name="theme-color" content="#352879" />
     <link rel="preload" href={plexMono} as="font" type="font/woff2" crossorigin />
-    <style is:inline set:html={`@font-face{font-family:PlexMono;src:url("${plexMono}") format("woff2");font-weight:400 600;font-display:swap}`}></style>
+    <link rel="preload" href={pressStart} as="font" type="font/woff2" crossorigin />
+    <style
+      is:inline
+      set:html={`@font-face{font-family:PlexMono;src:url("${plexMono}") format("woff2");font-weight:400 600;font-display:swap}@font-face{font-family:PressStart;src:url("${pressStart}") format("woff2");font-weight:400;font-display:swap}`}
+    ></style>
   </head>
   <body class="font-mono">
     <slot />

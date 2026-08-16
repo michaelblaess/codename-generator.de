@@ -3,184 +3,186 @@
 @tailwind utilities;
 
 /*
- * Einsatzplakette. Ein Codename ist der Name einer Operation - also sieht die
- * Seite aus wie ein Briefing-Aushang: Betongrau als Grund, harte Farbflaechen
- * statt zarter Akzente, Gefahrenstreifen als Trenner, Kennnummern in Kaesten.
- * Nichts ist rund, nichts verlaeuft weich.
+ * Titelbildschirm, 8/16-Bit. Der Rahmen ist der Bildschirmrand des C64, innen
+ * liegt das Bild: Copper-Balken wie auf dem Amiga, ein Chromlogo wie bei
+ * Uridium oder Goldrunner, die Vorschlaege als Highscore-Tabelle, unten ein
+ * Scroller. Bedient wird ueber die Funktionstasten - so wie es die Spiele
+ * dieser Zeit gemacht haben.
+ *
+ * Farben sind die VIC-II-Palette (Pepto-Werte), nicht frei erfunden.
  */
 :root {
-  --beton: #d9d6cd;
-  --tinte: #14161a;
-  --signal: #ff4d16;
-  --marine: #17356b;
-  --warn: #f2c200;
-  --blatt: #f2f0ea;
-  --raster: #c6c2b7;
+  --rand: #6c5eb5; /* Hellblau, der Bildschirmrand */
+  --schirm: #352879; /* Blau, die Bildflaeche */
+  --schirm-tief: #241a5c;
+  --hellblau: #8a7ed0;
+  --weiss: #ffffff;
+  --gelb: #d8e26f;
+  --cyan: #8fc4d2;
+  --gruen: #9ad284;
+  --rot: #cc6a5a;
+  --grau: #959595;
+  --schwarz: #10102a;
 }
 
 html {
-  background: var(--beton);
-  color: var(--tinte);
+  background: var(--rand);
+  color: var(--weiss);
   font-family: PlexMono, Consolas, monospace;
-  color-scheme: light;
+  color-scheme: dark;
 }
 
 body {
   margin: 0;
-  /* Millimeterpapier-Raster: die Flaeche eines Aushangs, nicht eine leere Seite. */
-  background-image:
-    linear-gradient(var(--raster) 1px, transparent 1px),
-    linear-gradient(90deg, var(--raster) 1px, transparent 1px);
-  background-size: 2.2rem 2.2rem;
-  background-position: -1px -1px;
 }
 
-/* --- Gefahrenstreifen ----------------------------------------------------*/
-.streifen {
-  height: 0.85rem;
-  background: repeating-linear-gradient(
-    -45deg,
-    var(--tinte) 0 0.75rem,
-    var(--warn) 0.75rem 1.5rem
-  );
+/* --- Bildschirm ----------------------------------------------------------*/
+.bildschirm {
+  background: var(--schirm);
+  border: 3px solid var(--schwarz);
+  box-shadow: 0 0 0 0.75rem var(--rand), 0 1.5rem 3rem rgb(0 0 0 / 45%);
 }
 
-.streifen-signal {
-  background: repeating-linear-gradient(
-    -45deg,
-    var(--tinte) 0 0.75rem,
-    var(--signal) 0.75rem 1.5rem
-  );
-}
-
-/* --- Plakette ------------------------------------------------------------
- * Der ausgewaehlte Name steht als Aufnaeher auf der Seite: Signalflaeche,
- * harter Rahmen, Versalien bis an die Kante.
+/* --- Copper-Balken -------------------------------------------------------
+ * Der Amiga konnte die Hintergrundfarbe pro Rasterzeile wechseln. Genau das
+ * sind diese Baender - sie wandern langsam, wie im Vorspann eines Spiels.
  */
-.plakette {
-  position: relative;
-  background: var(--signal);
-  color: var(--blatt);
-  border: 4px solid var(--tinte);
-  box-shadow: 0.7rem 0.7rem 0 var(--tinte);
+.copper {
+  height: 4.5rem;
+  background: repeating-linear-gradient(
+    180deg,
+    #ff5f5f 0 4px,
+    #ff9a3c 4px 8px,
+    #ffd23c 8px 12px,
+    #9ad284 12px 16px,
+    #8fc4d2 16px 20px,
+    #6c5eb5 20px 24px,
+    #352879 24px 28px
+  );
+  background-size: 100% 28px;
+  animation: copper-lauf 2.6s linear infinite;
+}
+
+@keyframes copper-lauf {
+  to {
+    background-position: 0 28px;
+  }
+}
+
+/* --- Pixelschrift --------------------------------------------------------*/
+.pixel {
+  font-family: PressStart, PlexMono, monospace;
+  letter-spacing: 0.04em;
+  line-height: 1.6;
+}
+
+/* --- Chromlogo -----------------------------------------------------------
+ * Der Verlauf laeuft von oben nach unten durch die Buchstaben, darunter liegt
+ * ein harter schwarzer Rand - so sahen die Logos der 16-Bit-Titel aus.
+ */
+.chrom {
+  background-image: linear-gradient(
+    180deg,
+    #ffffff 0%,
+    #ffffff 26%,
+    #ffe066 34%,
+    #ffa02c 52%,
+    #c8501e 66%,
+    #ffd76a 82%,
+    #ffffff 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(3px 3px 0 var(--schwarz));
 }
 
 .held {
-  font-size: clamp(2rem, 8.2vw, 5.6rem);
-  font-weight: 600;
-  line-height: 0.94;
-  letter-spacing: -0.015em;
-  text-transform: uppercase;
+  font-size: clamp(1.6rem, 6.4vw, 4.2rem);
+  line-height: 1.15;
   word-break: break-word;
 }
 
-/* Kennnummer im Kasten - jede Operation traegt eine. */
-.kennung {
-  border: 3px solid var(--tinte);
-  background: var(--blatt);
-  color: var(--tinte);
-  padding: 0.1rem 0.5rem;
-  font-size: 0.78rem;
-  letter-spacing: 0.22em;
-}
-
-/* Der Stempel faellt schief aufs Blatt, wenn ein Name mitgenommen wurde. */
-.stempel {
-  position: absolute;
-  bottom: -1.1rem;
-  right: 1rem;
-  transform: rotate(-7deg);
-  border: 3px solid var(--marine);
-  background: var(--blatt);
-  color: var(--marine);
-  padding: 0.15rem 0.8rem;
-  font-size: 0.9rem;
-  letter-spacing: 0.28em;
-  animation: stempeln 0.16s ease-out;
-  pointer-events: none;
-}
-
-@keyframes stempeln {
-  from {
-    transform: rotate(-7deg) scale(1.6);
-    opacity: 0;
-  }
-  to {
-    transform: rotate(-7deg) scale(1);
-    opacity: 1;
-  }
-}
-
-/* --- Karten --------------------------------------------------------------
- * Die Alternativen liegen als Karteikarten im Raster, nicht als Zeilenliste.
- */
-.karte {
-  background: var(--blatt);
-  border: 2px solid var(--tinte);
+/* --- Highscore-Tabelle ---------------------------------------------------*/
+.rang {
+  display: grid;
+  grid-template-columns: 2.6rem 1fr auto;
+  gap: 0.6rem;
+  padding: 0.28rem 0.5rem;
+  width: 100%;
   text-align: left;
-  padding: 0.5rem 0.6rem;
-  transition: transform 0.08s ease-out;
+  color: var(--cyan);
 }
 
-.karte:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: 4px 4px 0 var(--tinte);
+.rang:hover {
+  background: var(--schirm-tief);
+  color: var(--weiss);
 }
 
-.karte[aria-current='true'] {
-  background: var(--marine);
-  color: var(--blatt);
-  box-shadow: 4px 4px 0 var(--tinte);
+.rang[aria-current='true'] {
+  background: var(--gelb);
+  color: var(--schwarz);
 }
 
-.karte[aria-current='true'] .karte-slug {
-  color: #b9c6e2;
+.rang[aria-current='true'] .rang-slug {
+  color: var(--schirm);
 }
 
-/* --- Schalttafel ---------------------------------------------------------*/
-.taste {
-  border: 2px solid var(--tinte);
-  background: var(--blatt);
-  color: var(--tinte);
-  padding: 0.28rem 0.6rem;
-  font-size: 0.78rem;
-  letter-spacing: 0.08em;
+/* --- Funktionstasten -----------------------------------------------------*/
+.ftaste {
+  border: 2px solid var(--hellblau);
+  background: var(--schirm-tief);
+  color: var(--weiss);
+  padding: 0.3rem 0.65rem;
 }
 
-.taste:hover {
-  background: var(--warn);
+.ftaste:hover {
+  background: var(--hellblau);
 }
 
-.taste[aria-pressed='true'] {
-  background: var(--tinte);
-  color: var(--blatt);
+.ftaste[aria-pressed='true'] {
+  background: var(--gelb);
+  border-color: var(--gelb);
+  color: var(--schwarz);
 }
 
-.taste:focus-visible,
+.ftaste-kuerzel {
+  color: var(--gelb);
+}
+
+.ftaste[aria-pressed='true'] .ftaste-kuerzel {
+  color: var(--schirm);
+}
+
+.ftaste:focus-visible,
 button:focus-visible,
 a:focus-visible {
-  outline: 3px solid var(--marine);
+  outline: 3px solid var(--gelb);
   outline-offset: 2px;
 }
 
-/* Hauptschalter: der eine Knopf, der die Maschine ausloest. */
-.hauptschalter {
-  background: var(--tinte);
-  color: var(--blatt);
-  border: 3px solid var(--tinte);
-  box-shadow: 0.35rem 0.35rem 0 var(--signal);
-  padding: 0.6rem 1.4rem;
-  letter-spacing: 0.22em;
+/* --- Scroller ------------------------------------------------------------
+ * Die Laufschrift am unteren Rand. Ohne sie waere es kein Titelbildschirm.
+ */
+.scroller {
+  overflow: hidden;
+  background: var(--schwarz);
+  border-top: 3px solid var(--hellblau);
+  padding: 0.45rem 0;
 }
 
-.hauptschalter:hover {
-  background: var(--signal);
-  box-shadow: 0.35rem 0.35rem 0 var(--tinte);
+.scroller > span {
+  display: inline-block;
+  white-space: nowrap;
+  padding-left: 100%;
+  color: var(--gelb);
+  animation: scrollen 38s linear infinite;
 }
 
-.hauptschalter:active {
-  transform: translate(0.2rem, 0.2rem);
-  box-shadow: 0.15rem 0.15rem 0 var(--tinte);
+@keyframes scrollen {
+  to {
+    transform: translateX(-100%);
+  }
 }
 
 /* --- Regler --------------------------------------------------------------*/
@@ -188,45 +190,45 @@ input[type='range'] {
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
-  height: 1.4rem;
+  height: 1.2rem;
   background: transparent;
   cursor: pointer;
 }
 
 input[type='range']::-webkit-slider-runnable-track {
-  height: 0.5rem;
-  background: var(--blatt);
-  border: 2px solid var(--tinte);
+  height: 0.6rem;
+  background: var(--schirm-tief);
+  border: 2px solid var(--hellblau);
 }
 
 input[type='range']::-moz-range-track {
-  height: 0.5rem;
-  background: var(--blatt);
-  border: 2px solid var(--tinte);
+  height: 0.6rem;
+  background: var(--schirm-tief);
+  border: 2px solid var(--hellblau);
 }
 
 input[type='range']::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 1rem;
-  height: 1.4rem;
-  margin-top: -0.5rem;
-  background: var(--signal);
-  border: 2px solid var(--tinte);
+  width: 0.9rem;
+  height: 1.2rem;
+  margin-top: -0.35rem;
+  background: var(--gelb);
+  border: 2px solid var(--schwarz);
 }
 
 input[type='range']::-moz-range-thumb {
-  width: 1rem;
-  height: 1.4rem;
+  width: 0.9rem;
+  height: 1.2rem;
   border-radius: 0;
-  background: var(--signal);
-  border: 2px solid var(--tinte);
+  background: var(--gelb);
+  border: 2px solid var(--schwarz);
 }
 
 /* --- Themenliste ---------------------------------------------------------*/
 .kanal {
   scrollbar-width: thin;
-  scrollbar-color: var(--tinte) var(--blatt);
+  scrollbar-color: var(--hellblau) var(--schirm-tief);
 }
 
 .kanal::-webkit-scrollbar {
@@ -234,23 +236,23 @@ input[type='range']::-moz-range-thumb {
 }
 
 .kanal::-webkit-scrollbar-thumb {
-  background: var(--tinte);
+  background: var(--hellblau);
 }
 
 .kanal::-webkit-scrollbar-track {
-  background: var(--blatt);
+  background: var(--schirm-tief);
 }
 
 /* --- Kleinkram -----------------------------------------------------------*/
 .blinker::after {
   content: '';
   display: inline-block;
-  width: 0.45em;
+  width: 0.6em;
   height: 1em;
-  margin-left: 0.2em;
-  vertical-align: -0.12em;
-  background: var(--signal);
-  animation: blinken 1.05s steps(1) infinite;
+  margin-left: 0.15em;
+  vertical-align: -0.1em;
+  background: var(--gelb);
+  animation: blinken 0.9s steps(1) infinite;
 }
 
 @keyframes blinken {
@@ -260,15 +262,14 @@ input[type='range']::-moz-range-thumb {
 }
 
 ::selection {
-  background: var(--signal);
-  color: var(--blatt);
+  background: var(--gelb);
+  color: var(--schwarz);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .blinker::after,
-  .stempel,
-  .karte {
+  .copper,
+  .scroller > span,
+  .blinker::after {
     animation: none;
-    transition: none;
   }
 }

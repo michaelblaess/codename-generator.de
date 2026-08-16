@@ -4,16 +4,21 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Einsatzaushang: Betongrau als Grund, harte Signalfarben darauf.
-        beton: 'var(--beton)',
-        tinte: 'var(--tinte)',
-        signal: 'var(--signal)',
-        marine: 'var(--marine)',
-        warn: 'var(--warn)',
-        blatt: 'var(--blatt)',
+        // VIC-II-Palette des C64 (Pepto-Werte), siehe global.css.
+        rand: 'var(--rand)',
+        schirm: 'var(--schirm)',
+        schirmTief: 'var(--schirm-tief)',
+        hellblau: 'var(--hellblau)',
+        gelb: 'var(--gelb)',
+        cyan: 'var(--cyan)',
+        gruen: 'var(--gruen)',
+        rot: 'var(--rot)',
+        grau: 'var(--grau)',
+        schwarz: 'var(--schwarz)',
       },
       fontFamily: {
         mono: ['PlexMono', 'Consolas', 'DejaVu Sans Mono', 'monospace'],
+        pixel: ['PressStart', 'PlexMono', 'monospace'],
       },
     },
   },

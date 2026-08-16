@@ -59,10 +59,10 @@ const ersterHeld = (await held.innerText()).trim();
 pruefe(ersterHeld.length > 2, `Plakette zeigt einen Namen: "${ersterHeld}"`);
 
 const karten = seite.locator('ol li button');
-pruefe((await karten.count()) === 20, `20 Karten (${await karten.count()})`);
+pruefe((await karten.count()) === 20, `20 Raenge in der Bestenliste (${await karten.count()})`);
 pruefe(
   (await seite.locator('ol li button[aria-current="true"]').count()) === 1,
-  'genau eine Karte ist als aktiv markiert',
+  'genau ein Rang ist als aktiv markiert',
 );
 
 // 2. Die Schrift liegt wirklich an. Faellt sie auf einen Fallback zurueck,
@@ -73,6 +73,28 @@ pruefe(
     return document.fonts.check('16px PlexMono');
   }),
   'PlexMono geladen',
+);
+// Die Pixelschrift traegt den ganzen Entwurf. Beim ersten Versuch lag das
+// kyrillische Subset im Repo - fonts.check meldete "geladen", die Buchstaben
+// kamen trotzdem aus der Ersatzschrift. Deshalb wird hier die Glyphenbreite
+// gemessen: eine 8-Bit-Schrift ist deutlich breiter als Plex Mono.
+pruefe(
+  await seite.evaluate(async () => {
+    await document.fonts.ready;
+    const probe = document.createElement('span');
+    probe.style.cssText = 'position:absolute;visibility:hidden;font-size:32px;white-space:pre';
+    document.body.append(probe);
+    const breite = (familie) => {
+      probe.style.fontFamily = familie;
+      probe.textContent = 'CODENAME';
+      return probe.getBoundingClientRect().width;
+    };
+    const pixel = breite('PressStart');
+    const plex = breite('PlexMono');
+    probe.remove();
+    return pixel > plex * 1.15;
+  }),
+  'Pixelschrift liegt wirklich an (nicht die Ersatzschrift)',
 );
 
 // 3. Der Druckeffekt laeuft wirklich. Genau das schlug vorher still fehl:
@@ -96,17 +118,17 @@ pruefe(
 // Verglichen wird der Slug: er ist eindeutig und steht auf beiden Seiten
 // unveraendert. Ein Vergleich ueber zerlegten Text lieferte einen Leerstring -
 // und damit eine Pruefung, die gar nicht scheitern konnte.
-const dritterSlug = (await karten.nth(2).locator('.karte-slug').innerText()).trim();
-pruefe(dritterSlug.length > 2, `dritte Karte hat einen Slug: "${dritterSlug}"`);
+const dritterName = (await karten.nth(2).innerText()).replace(/^\d+\.\s*/, '').replace(/\s*MUT$/, '').trim();
+pruefe(dritterName.length > 2, `dritter Rang hat einen Namen: "${dritterName}"`);
 await karten.nth(2).click();
-await seite.waitForTimeout(1400);
+await seite.waitForTimeout(1500);
 pruefe(
-  (await seite.locator('.plakette').getByText(dritterSlug, { exact: true }).count()) === 1,
-  `Karte setzt die Plakette auf "${dritterSlug}"`,
+  (await seite.locator('.held').innerText()).trim() === dritterName,
+  `Rang setzt den Titel auf "${dritterName}"`,
 );
 
 // 5. Sprachwechsel filtert die Themen.
-await seite.getByRole('button', { name: 'Deutsch' }).click();
+await seite.getByRole('button', { name: 'DEUTSCH' }).click();
 await seite.waitForTimeout(500);
 const themen = (await seite.locator('aside ul li').allInnerTexts()).join(' | ');
 pruefe(themen.includes('Tierwelt'), 'Tierwelt im deutschen Modus sichtbar');
@@ -128,8 +150,18 @@ const staemme = [...pools.adjectives.words, ...pools.verbs.words].map((w) =>
     .replaceAll('ü', 'ue')
     .replaceAll('ß', 'ss'),
 );
-const slugs = await seite.locator('ol li button .karte-slug').allInnerTexts();
-const ersteWoerter = slugs.map((slug) => slug.trim().split('-')[0].toLowerCase());
+const slugs = await seite.locator('ol li button').allInnerTexts();
+const ersteWoerter = slugs.map((zeile) =>
+  zeile
+    .replace(/^\d+\.\s*/, '')
+    .trim()
+    .split(/\s+/)[0]
+    .toLowerCase()
+    .replaceAll('ä', 'ae')
+    .replaceAll('ö', 'oe')
+    .replaceAll('ü', 'ue')
+    .replaceAll('ß', 'ss'),
+);
 const gebeugt = ersteWoerter.filter((wort) =>
   staemme.some(
     (stamm) =>
@@ -144,7 +176,7 @@ pruefe(
 
 // 7. Permalink reproduziert denselben Stapel.
 const vorher = await seite.locator('ol li').allInnerTexts();
-await seite.getByRole('button', { name: 'LINK ZU DIESEM STAPEL' }).click();
+await seite.getByRole('button', { name: 'LINK', exact: true }).click();
 await seite.waitForTimeout(250);
 const link = await seite.evaluate(() => navigator.clipboard.readText().catch(() => ''));
 if (link) {
