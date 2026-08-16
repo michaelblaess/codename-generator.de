@@ -96,7 +96,12 @@ export default function Generator() {
   // Das aktive Thema muss sichtbar sein - bei 23 Eintraegen liegt es nach einem
   // Permalink sonst ausserhalb des Sichtfensters.
   useEffect(() => {
-    aktivesThemaRef.current?.scrollIntoView({ block: 'nearest' });
+    const eintrag = aktivesThemaRef.current;
+    const liste = eintrag?.closest('ul');
+    if (!eintrag || !liste) return;
+    // Bewusst kein scrollIntoView: das scrollt auch das Fenster und reisst den
+    // Titelbildschirm aus dem Blick, sobald ein Thema weiter unten aktiv ist.
+    liste.scrollTop = eintrag.offsetTop - liste.clientHeight / 2 + eintrag.clientHeight / 2;
   }, [themeSlug, language]);
 
   const suggestions: Suggestion[] = useMemo(() => {
@@ -231,13 +236,15 @@ export default function Generator() {
               <li key={`${s.slug}-${index}`}>
                 <button
                   type="button"
-                  className="rang pixel text-[0.62rem]"
+                  className="rang text-[0.92rem] tracking-wide"
                   aria-current={index === aktiv}
                   onClick={() => setAktiv(index)}
                 >
-                  <span className="tabular-nums">{String(index + 1).padStart(2, '0')}.</span>
+                  <span className="rang-nummer tabular-nums">
+                    {String(index + 1).padStart(2, '0')}.
+                  </span>
                   <span className="truncate">{s.name.toUpperCase()}</span>
-                  <span className="rang-slug hidden text-[0.5rem] opacity-70 sm:inline">
+                  <span className="rang-slug pixel hidden text-[0.5rem] sm:inline">
                     {s.mutated ? 'MUT' : ''}
                   </span>
                 </button>

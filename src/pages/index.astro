@@ -25,10 +25,17 @@ const scroller = [
   title="Codename Generator - project codenames from curated themes"
   description={`Generate project codenames from ${list.length} curated themes and ${wordCount} words, in English or German, with optional phonetic mutation.`}
 >
-  <div class="mx-auto max-w-5xl px-3 py-6 sm:px-6 sm:py-10">
+  <div class="mx-auto w-full max-w-[110rem] px-3 py-5 sm:px-5 sm:py-7">
     <div class="bildschirm">
-      <!-- Copper-Balken: der Vorspann faengt oben an. -->
-      <div class="copper"></div>
+      <!-- Kopfeffekt. Umschaltbar zum Vergleichen: ?fx=sterne oder ?fx=plasma -->
+      <div id="kopfeffekt" class="copper"></div>
+      <script is:inline>
+        // Klein und ohne Insel: der Effekt gehoert zur Kulisse, nicht zur Logik.
+        const fx = new URLSearchParams(location.search).get('fx');
+        if (fx === 'sterne' || fx === 'plasma') {
+          document.getElementById('kopfeffekt').className = fx;
+        }
+      </script>
 
       <header class="border-b-4 border-schwarz bg-schirm px-4 py-5 text-center sm:px-8">
         <h1 class="pixel text-[1.35rem] leading-tight sm:text-[2.4rem]">

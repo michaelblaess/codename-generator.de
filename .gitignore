@@ -5,8 +5,9 @@ node_modules/
 
 # Artefakte der Pruefskripte
 smoke.png
-entwurf.png
-druck.png
+entwurf*.png
+druck*.png
+fx-*.png
 
 # Werkzeuge
 .DS_Store

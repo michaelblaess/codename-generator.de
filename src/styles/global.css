@@ -69,6 +69,70 @@ body {
   }
 }
 
+/* --- Alternative Kopfeffekte ---------------------------------------------
+ * Zum Vergleichen umschaltbar ueber ?fx=sterne oder ?fx=plasma. Alle drei
+ * Effekte belegen dieselbe Flaeche, damit sich das Layout nicht verschiebt.
+ */
+
+/* Sternenfeld: der Hintergrund von Uridium und Goldrunner. Drei Ebenen mit
+ * unterschiedlichem Tempo ergeben Tiefe (Parallaxe). */
+.sterne {
+  height: 4.5rem;
+  background-color: var(--schwarz);
+  background-image:
+    radial-gradient(1.5px 1.5px at 12% 30%, #ffffff, transparent),
+    radial-gradient(1.5px 1.5px at 47% 72%, #ffffff, transparent),
+    radial-gradient(1.5px 1.5px at 78% 18%, #d8e26f, transparent),
+    radial-gradient(2px 2px at 22% 62%, #8fc4d2, transparent),
+    radial-gradient(2px 2px at 64% 40%, #ffffff, transparent),
+    radial-gradient(2.5px 2.5px at 88% 78%, #ffffff, transparent),
+    radial-gradient(2.5px 2.5px at 35% 12%, #cc6a5a, transparent);
+  background-size:
+    240px 100%,
+    240px 100%,
+    240px 100%,
+    380px 100%,
+    380px 100%,
+    620px 100%,
+    620px 100%;
+  animation: sterne-flug 9s linear infinite;
+}
+
+@keyframes sterne-flug {
+  to {
+    /* Die hinteren Ebenen wandern langsamer als die vorderen. */
+    background-position:
+      -240px 0,
+      -240px 0,
+      -240px 0,
+      -190px 0,
+      -190px 0,
+      -155px 0,
+      -155px 0;
+  }
+}
+
+/* Plasma: weiche Farbwolken, der Demoszene-Klassiker. Drei ueberlagerte
+ * Verlaeufe, die gegeneinander wandern. */
+.plasma {
+  height: 4.5rem;
+  background-color: #241a5c;
+  background-image:
+    radial-gradient(60% 140% at 20% 40%, rgb(204 106 90 / 85%), transparent 70%),
+    radial-gradient(55% 130% at 62% 60%, rgb(143 196 210 / 80%), transparent 70%),
+    radial-gradient(70% 150% at 85% 30%, rgb(216 226 111 / 75%), transparent 72%),
+    linear-gradient(90deg, #6c5eb5, #352879);
+  background-size: 180% 100%, 160% 100%, 200% 100%, 100% 100%;
+  animation: plasma-wogen 11s ease-in-out infinite alternate;
+  filter: saturate(1.15);
+}
+
+@keyframes plasma-wogen {
+  to {
+    background-position: 70% 0, -60% 0, 40% 0, 0 0;
+  }
+}
+
 /* --- Pixelschrift --------------------------------------------------------*/
 .pixel {
   font-family: PressStart, PlexMono, monospace;
@@ -81,20 +145,22 @@ body {
  * ein harter schwarzer Rand - so sahen die Logos der 16-Bit-Titel aus.
  */
 .chrom {
+  /* Weiche Uebergaenge statt harter Kanten - der Verlauf soll den Buchstaben
+   * Volumen geben, nicht sie in Streifen zerlegen. */
   background-image: linear-gradient(
     180deg,
     #ffffff 0%,
-    #ffffff 26%,
-    #ffe066 34%,
-    #ffa02c 52%,
-    #c8501e 66%,
-    #ffd76a 82%,
-    #ffffff 100%
+    #f4f8ff 18%,
+    #ffeaa0 36%,
+    #ffc46a 52%,
+    #e8873a 68%,
+    #ffcf7d 84%,
+    #fff6df 100%
   );
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  filter: drop-shadow(3px 3px 0 var(--schwarz));
+  filter: drop-shadow(2px 2px 0 var(--schwarz));
 }
 
 .held {
@@ -106,12 +172,12 @@ body {
 /* --- Highscore-Tabelle ---------------------------------------------------*/
 .rang {
   display: grid;
-  grid-template-columns: 2.6rem 1fr auto;
-  gap: 0.6rem;
-  padding: 0.28rem 0.5rem;
+  grid-template-columns: 2.4rem 1fr auto;
+  gap: 0.7rem;
+  padding: 0.2rem 0.6rem;
   width: 100%;
   text-align: left;
-  color: var(--cyan);
+  color: #e8e6ff;
 }
 
 .rang:hover {
@@ -124,6 +190,12 @@ body {
   color: var(--schwarz);
 }
 
+.rang-nummer {
+  color: var(--gelb);
+}
+
+/* Auf der gelben Zeile waere die gelbe Nummer unsichtbar. */
+.rang[aria-current='true'] .rang-nummer,
 .rang[aria-current='true'] .rang-slug {
   color: var(--schirm);
 }
@@ -268,6 +340,8 @@ input[type='range']::-moz-range-thumb {
 
 @media (prefers-reduced-motion: reduce) {
   .copper,
+  .sterne,
+  .plasma,
   .scroller > span,
   .blinker::after {
     animation: none;
