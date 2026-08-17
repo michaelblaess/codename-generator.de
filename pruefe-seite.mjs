@@ -399,6 +399,60 @@ if (schiffDa) {
   );
 }
 
+// 11b. Schiffe duerfen sich nicht durchdringen. Die Sperre laesst pro Seite
+//      nur ein Schiff zu - hier wird das Ergebnis gemessen, nicht die Regel:
+//      25 Sekunden lang alle Schiffe paarweise auf Ueberschneidung pruefen.
+let ueberschneidungen = 0;
+let meisten = 0;
+const wacheBis = Date.now() + 25000;
+while (Date.now() < wacheBis) {
+  const kaesten = await seite.evaluate(() =>
+    [...document.querySelectorAll('.schiff')].map((el) => {
+      const k = el.getBoundingClientRect();
+      return { x: k.x, y: k.y, w: k.width, h: k.height };
+    }),
+  );
+  meisten = Math.max(meisten, kaesten.length);
+  for (let i = 0; i < kaesten.length; i++) {
+    for (let j = i + 1; j < kaesten.length; j++) {
+      const a = kaesten[i];
+      const b = kaesten[j];
+      if (a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y) {
+        ueberschneidungen++;
+      }
+    }
+  }
+  await seite.waitForTimeout(250);
+}
+pruefe(
+  ueberschneidungen === 0,
+  `keine Kollision in 25 s (${ueberschneidungen} Ueberschneidungen, hoechstens ${meisten} Schiffe gleichzeitig)`,
+);
+
+// 11c. Der Cursor hinter READY. ist eine volle Zeichenzelle, wie auf dem C64 -
+//      er war schon einmal schmaler als die Schrift daneben.
+const zelle = await seite.evaluate(() => {
+  const feld = document.getElementById('statuszeile');
+  const nach = getComputedStyle(feld.querySelector('.blinker'), '::after');
+  const probe = document.createElement('span');
+  probe.style.cssText = 'position:absolute;visibility:hidden;white-space:pre';
+  probe.style.font = getComputedStyle(feld).font;
+  probe.textContent = 'M';
+  document.body.appendChild(probe);
+  const zeichen = probe.getBoundingClientRect().width;
+  probe.remove();
+  return {
+    zeichen,
+    breite: parseFloat(nach.width),
+    hoehe: parseFloat(nach.height),
+    schrift: parseFloat(getComputedStyle(feld).fontSize),
+  };
+});
+pruefe(
+  Math.abs(zelle.breite - zelle.zeichen) < 0.6 && zelle.hoehe >= zelle.schrift,
+  `Cursor ist eine Zeichenzelle (${zelle.breite}x${zelle.hoehe}px, Zeichen ${zelle.zeichen}px, Schrift ${zelle.schrift}px)`,
+);
+
 // Schmaler Schirm und reduzierte Bewegung: nichts fliegt.
 const eng = await kontext.newPage();
 await eng.setViewportSize({ width: 1200, height: 800 });

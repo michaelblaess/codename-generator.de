@@ -55,12 +55,25 @@
   }
 
   .schiff {
-    width: 3.6rem;
-    height: 2.85rem;
+    /* --tiefe staffelt die Groesse: ein kleines Schiff liest sich als
+       weiter weg. Die Perspektive gilt fuer die Ebene darunter. */
+    width: calc(3.6rem * var(--tiefe, 1));
+    height: calc(2.85rem * var(--tiefe, 1));
+    perspective: 22rem;
     animation: flug var(--dauer, 15s) linear forwards;
   }
 
-  .schiff > svg {
+  /* Der Koerper steht nicht flach auf dem Schirm, sondern kippt von der
+     Kamera weg - erst das gibt dem Rumpf Tiefe. */
+  .schiffkoerper {
+    width: 100%;
+    height: 100%;
+    transform: rotateX(52deg);
+    transform-style: preserve-3d;
+    filter: drop-shadow(0 3px 4px rgb(0 0 0 / 85%));
+  }
+
+  .schiffkoerper > svg {
     display: block;
     width: 100%;
     height: 100%;
@@ -197,16 +210,22 @@
          muss deutlich schmaler bleiben als die Spannweite, sonst verschmilzt
          beides zu einem Dreieck - genau daran ist der erste Entwurf
          gescheitert. -->
-    <path d="M20 14 L1 32 L4 36 L20 36 Z" fill="#a97a22"/>
-    <path d="M28 14 L47 32 L44 36 L28 36 Z" fill="#c8912a"/>
+    <path d="M20 14 L1 32 L4 36 L20 36 Z" fill="#7a5615"/>
+    <path d="M28 14 L47 32 L44 36 L28 36 Z" fill="#f0c552"/>
     <path d="M20 14 L1 32 L4 36 L20 36 Z" fill="url(#schiffRaster)" stroke="none"/>
     <path d="M28 14 L47 32 L44 36 L28 36 Z" fill="url(#schiffRaster)" stroke="none"/>
     <!-- Schlanker Rumpf mit der Kerbe zwischen den Triebwerken -->
     <path d="M24 2 L28 14 L28 36 L26 31 L22 31 L20 36 L20 14 Z" fill="url(#schiffRumpf)"/>
     <path d="M24 2 L28 14 L28 36 L26 31 L22 31 L20 36 L20 14 Z"
           fill="url(#schiffRaster)" stroke="none" opacity="0.45"/>
+    <!-- Glanzkante auf der Lichtseite, dunkle Kante im Schatten: erst der
+         Unterschied laesst den Rumpf als Koerper erscheinen. -->
+    <path d="M24 2 L28 14 L28 36" stroke="#fff6dd" stroke-width="1" fill="none"/>
+    <path d="M24 2 L20 14 L20 36" stroke="#4a2f08" stroke-width="1" fill="none"/>
+    <path d="M28 14 L47 32" stroke="#fff6dd" stroke-width="0.8" fill="none" opacity="0.8"/>
     <!-- Kanzel -->
-    <path d="M21.5 9 L26.5 9 L27 15 L21 15 Z" fill="#3a1140" stroke="#8a5f14" stroke-width="0.6"/>
+    <path d="M21.5 9 L26.5 9 L27 15 L21 15 Z" fill="#2a0c30" stroke="#8a5f14" stroke-width="0.6"/>
+    <path d="M22 9.6 L25 9.6 L23.2 14.4 L21.6 14.4 Z" fill="#a08fb0" opacity="0.55" stroke="none"/>
     <!-- Triebwerke links und rechts der Kerbe -->
     <rect x="20.5" y="31" width="3" height="5" fill="#c13bb0" stroke="#6a1d6e" stroke-width="0.6"/>
     <rect x="24.5" y="31" width="3" height="5" fill="#c13bb0" stroke="#6a1d6e" stroke-width="0.6"/>
@@ -217,6 +236,8 @@
   const ruhig = window.matchMedia('(prefers-reduced-motion: reduce)');
   const breit = window.matchMedia('(min-width: 1400px)');
   const BREITE = 58;
+  // Welche Seiten gerade befahren sind - siehe Kollisionssperre unten.
+  const belegt = new Set();
 
   function zufall(von, bis) {
     return von + Math.random() * (bis - von);
@@ -225,11 +246,23 @@
   function starten() {
     if (!feld || ruhig.matches || !breit.matches || document.hidden) return;
 
+    // Pro Seite darf immer nur EIN Schiff unterwegs sein. Im freien Rand ist
+    // neben Rumpfbreite und seitlichem Ausschlag kein Platz fuer ein
+    // zweites, die beiden wuerden sich sonst durchdringen.
+    const frei_seiten = ['links', 'rechts'].filter((s) => !belegt.has(s));
+    if (frei_seiten.length === 0) return;
+    const seite = frei_seiten[Math.floor(Math.random() * frei_seiten.length)];
+    belegt.add(seite);
+
     const bahn = document.createElement('div');
     bahn.className = 'schiffbahn';
+    bahn.dataset.seite = seite;
     const schiff = document.createElement('div');
     schiff.className = 'schiff';
-    schiff.innerHTML = RUMPF;
+    const koerper = document.createElement('div');
+    koerper.className = 'schiffkoerper';
+    koerper.innerHTML = RUMPF;
+    schiff.appendChild(koerper);
     bahn.appendChild(schiff);
 
     // Der freie Rand neben dem 78rem breiten Kasten. Eigene Breite UND
@@ -239,7 +272,7 @@
     const frei = Math.max(0, rand - BREITE);
     const seit = Math.min(26, frei / 2);
     const grund = seit + zufall(0, Math.max(0, frei - seit * 2));
-    if (Math.random() < 0.5) {
+    if (seite === 'links') {
       bahn.style.left = `${grund}px`;
     } else {
       bahn.style.right = `${grund}px`;
@@ -258,8 +291,13 @@
     // Nur auf den Flug hoeren. animationend blubbert auch vom Rollflug des
     // SVG herauf, und ohne diese Pruefung verschwindet das Schiff schon nach
     // der ersten Rolle - gemessen, bevor es je die Wende erreicht hat.
+    // Ein weiter entferntes Schiff ist kleiner und langsamer unterwegs.
+    const tiefe = zufall(0.62, 1);
+    schiff.style.setProperty('--tiefe', `${tiefe.toFixed(2)}`);
     schiff.addEventListener('animationend', (e) => {
-      if (e.animationName === 'flug') bahn.remove();
+      if (e.animationName !== 'flug') return;
+      bahn.remove();
+      belegt.delete(seite);
     });
     feld.appendChild(bahn);
   }
