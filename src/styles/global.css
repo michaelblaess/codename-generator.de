@@ -223,6 +223,36 @@ a:focus-visible {
   outline-offset: 2px;
 }
 
+/* --- Lockruf -------------------------------------------------------------
+ * Der Musikknopf blinkt, solange er noch nie benutzt wurde - sonst uebersieht
+ * man ihn zwischen den anderen Tasten. Nach dem ersten Klick ist Schluss,
+ * ein dauerhaft blinkender Knopf waere Kirmes.
+ */
+.ftaste.lockt {
+  animation: locken 1.5s ease-in-out infinite;
+}
+
+@keyframes locken {
+  0%,
+  100% {
+    border-color: var(--magenta-tief);
+    background: #140b1a;
+    color: var(--creme);
+  }
+  50% {
+    border-color: var(--gold-hell);
+    background: var(--lila);
+    color: var(--gold-hell);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ftaste.lockt {
+    animation: none;
+    border-color: var(--gold);
+  }
+}
+
 /* --- Scroller ------------------------------------------------------------*/
 .scroller {
   overflow: hidden;
@@ -311,9 +341,14 @@ input[type='range']::-moz-range-thumb {
   content: '';
   display: inline-block;
   width: 1ch;
-  height: 1.05em;
+  /* An der gemessenen Tinte ausgerichtet, nicht an der Zeilenhoehe: die
+   * Grossbuchstaben von Press Start 2P reichen 8px ueber die Grundlinie und
+   * enden 1px darueber (canvas measureText, 8px Schrift). Der Block ist
+   * deshalb 0.875em hoch und sitzt 0.125em ueber der Grundlinie - vorher
+   * stand er 1,28px darunter und wirkte verrutscht. */
+  height: 0.875em;
   margin-left: 0.2em;
-  vertical-align: -0.16em;
+  vertical-align: 0.125em;
   background: var(--gold);
   animation: blinken 0.9s steps(1) infinite;
 }

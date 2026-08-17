@@ -22,6 +22,8 @@ export default function Musik({ sprache }: { sprache: UiSprache }) {
   const t = UI[sprache];
   const [vorhanden, setVorhanden] = useState(false);
   const [laeuft, setLaeuft] = useState(false);
+  // Solange der Knopf nie benutzt wurde, blinkt er.
+  const [benutzt, setBenutzt] = useState(false);
   const tonRef = useRef<HTMLAudioElement>(null);
 
   const basis = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -45,6 +47,7 @@ export default function Musik({ sprache }: { sprache: UiSprache }) {
   }, [ogg]);
 
   const umschalten = useCallback(() => {
+    setBenutzt(true);
     const ton = tonRef.current;
     if (!ton) return;
     if (laeuft) {
@@ -64,7 +67,8 @@ export default function Musik({ sprache }: { sprache: UiSprache }) {
     <>
       <button
         type="button"
-        className="ftaste pixel text-[0.5rem]"
+        data-rolle="musik"
+        className={`ftaste pixel text-[0.5rem]${benutzt ? '' : ' lockt'}`}
         aria-pressed={laeuft}
         onClick={umschalten}
         title={t.titelMusik}

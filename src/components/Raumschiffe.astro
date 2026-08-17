@@ -58,7 +58,10 @@
     /* --tiefe staffelt die Groesse: ein kleines Schiff liest sich als
        weiter weg. Die Perspektive gilt fuer die Ebene darunter. */
     width: calc(3.6rem * var(--tiefe, 1));
-    height: calc(2.85rem * var(--tiefe, 1));
+    /* 3,45rem statt 2,85rem: die Kippung staucht die Hoehe um cos(34 Grad).
+       Der Kasten wird entsprechend hoeher angelegt, damit das Schiff nach
+       der Kippung wieder 48 zu 38 steht und nicht gedrungen wirkt. */
+    height: calc(3.45rem * var(--tiefe, 1));
     perspective: 22rem;
     animation: flug var(--dauer, 15s) linear forwards;
   }
@@ -68,7 +71,7 @@
   .schiffkoerper {
     width: 100%;
     height: 100%;
-    transform: rotateX(52deg);
+    transform: rotateX(34deg);
     transform-style: preserve-3d;
     filter: drop-shadow(0 3px 4px rgb(0 0 0 / 85%));
   }
@@ -194,7 +197,7 @@
    * und darueber liegt ein feines Linienraster. Die Kanten tragen einen
    * dunklen Rand, sonst verschwimmt das Schiff auf dem schwarzen Grund.
    */
-  const RUMPF = `<svg viewBox="0 0 48 38" xmlns="http://www.w3.org/2000/svg">
+  const RUMPF = `<svg viewBox="0 0 48 38" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="schiffRumpf" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#fff6dd"/>

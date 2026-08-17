@@ -300,7 +300,9 @@ pruefe(
 await seite.setViewportSize({ width: 1400, height: 900 });
 await seite.goto(URL_BASIS, { waitUntil: 'networkidle' });
 await held.waitFor({ timeout: 10000 });
-const musikKnopf = seite.getByRole('button', { name: /MUSIK$/ });
+// Ueber ein Datenattribut statt ueber die Beschriftung: die wechselt beim
+// Klick auf "MUSIK AUS" und ein Namensmuster faende den Knopf danach nicht.
+const musikKnopf = seite.locator('[data-rolle="musik"]');
 const knopfDa = (await musikKnopf.count()) === 1;
 pruefe(knopfDa, 'Musikknopf ist da (Datei wird ausgeliefert)');
 
@@ -316,8 +318,18 @@ if (knopfDa) {
   );
   pruefe(vorher < 5000, `vor dem Klick fliessen keine Musikdaten (${vorher} Bytes)`);
 
+  // Der Knopf blinkt, bis er einmal benutzt wurde - sonst uebersieht man ihn.
+  pruefe(
+    ((await musikKnopf.getAttribute('class')) ?? '').includes('lockt'),
+    'Musikknopf blinkt, bevor er benutzt wurde',
+  );
+
   await musikKnopf.click();
   await seite.waitForTimeout(1500);
+  pruefe(
+    !((await musikKnopf.getAttribute('class')) ?? '').includes('lockt'),
+    'nach dem ersten Klick blinkt er nicht mehr',
+  );
   const zustand = await seite.evaluate(() => {
     const ton = document.querySelector('audio');
     return ton ? { pausiert: ton.paused, zeit: ton.currentTime, quelle: ton.currentSrc } : null;
@@ -335,7 +347,7 @@ await ohneMusik.route('**/musik/*', (weg) => weg.abort());
 await ohneMusik.goto(URL_BASIS, { waitUntil: 'networkidle' });
 await ohneMusik.waitForTimeout(1200);
 pruefe(
-  (await ohneMusik.getByRole('button', { name: /MUSIK$/ }).count()) === 0,
+  (await ohneMusik.locator('[data-rolle="musik"]').count()) === 0,
   'ohne ausgelieferte Musik erscheint kein Knopf',
 );
 await ohneMusik.close();
@@ -431,27 +443,45 @@ pruefe(
 
 // 11c. Der Cursor hinter READY. ist eine volle Zeichenzelle, wie auf dem C64 -
 //      er war schon einmal schmaler als die Schrift daneben.
+// Gemessen wird gegen die TINTE der Glyphen, nicht gegen die Zeilenhoehe.
+// Genau daran ist die erste Fassung gescheitert: Zeilenhoehe und Cursor
+// waren beide 8px, trotzdem sass der Block sichtbar zu tief, weil die
+// Grossbuchstaben von Press Start 2P 1px ueber der Grundlinie enden.
 const zelle = await seite.evaluate(() => {
   const feld = document.getElementById('statuszeile');
+  const stil = getComputedStyle(feld);
+  const bild = document.createElement('canvas').getContext('2d');
+  bild.font = `${stil.fontSize} ${stil.fontFamily}`;
+  const m = bild.measureText('READY.');
   const nach = getComputedStyle(feld.querySelector('.blinker'), '::after');
-  const probe = document.createElement('span');
-  probe.style.cssText = 'position:absolute;visibility:hidden;white-space:pre';
-  probe.style.font = getComputedStyle(feld).font;
-  probe.textContent = 'M';
-  document.body.appendChild(probe);
-  const zeichen = probe.getBoundingClientRect().width;
-  probe.remove();
   return {
-    zeichen,
+    tinteHoehe: m.actualBoundingBoxAscent + m.actualBoundingBoxDescent,
+    unterkante: -m.actualBoundingBoxDescent,
+    zeichen: bild.measureText('M').width,
     breite: parseFloat(nach.width),
     hoehe: parseFloat(nach.height),
-    schrift: parseFloat(getComputedStyle(feld).fontSize),
+    versatz: parseFloat(nach.verticalAlign),
   };
 });
 pruefe(
-  Math.abs(zelle.breite - zelle.zeichen) < 0.6 && zelle.hoehe >= zelle.schrift,
-  `Cursor ist eine Zeichenzelle (${zelle.breite}x${zelle.hoehe}px, Zeichen ${zelle.zeichen}px, Schrift ${zelle.schrift}px)`,
+  Math.abs(zelle.breite - zelle.zeichen) < 0.6 &&
+    Math.abs(zelle.hoehe - zelle.tinteHoehe) < 0.6 &&
+    Math.abs(zelle.versatz - zelle.unterkante) < 0.6,
+  `Cursor deckt die Buchstabenhoehe (${zelle.breite}x${zelle.hoehe}px bei ${zelle.versatz}px ueber der Grundlinie, Tinte ${zelle.tinteHoehe}px ab ${zelle.unterkante}px)`,
 );
+
+// Das Schiff darf nach der Kippung nicht gedrungen wirken: das gezeichnete
+// Verhaeltnis muss dem Entwurf von 48 zu 38 nahekommen. Gemessen wird der
+// GEKIPPTE Koerper, nicht der Elternknoten - der bleibt unveraendert und
+// haette den Fehler verdeckt.
+const koerper = await seite.locator('.schiffkoerper').first().boundingBox();
+if (koerper) {
+  const verhaeltnis = koerper.width / koerper.height;
+  pruefe(
+    Math.abs(verhaeltnis - 48 / 38) < 0.2,
+    `Schiffsverhaeltnis ${verhaeltnis.toFixed(2)} (Entwurf ${(48 / 38).toFixed(2)})`,
+  );
+}
 
 // Schmaler Schirm und reduzierte Bewegung: nichts fliegt.
 const eng = await kontext.newPage();
