@@ -294,6 +294,89 @@ pruefe(
   'englische Beschriftung im Bedienfeld',
 );
 
+// 11. Die Raumschiffe in den Raendern. Drei Dinge koennen still brechen: der
+//     Astro-Scope frisst die Klassen (dann fliegt nichts), das Schiff haengt
+//     ueber dem Inhalt, oder die Wende passiert ausserhalb des Bildes.
+await seite.setViewportSize({ width: 1600, height: 900 });
+await seite.goto(URL_BASIS, { waitUntil: 'networkidle' });
+
+const bisSchiff = Date.now() + 15000;
+while (Date.now() < bisSchiff && (await seite.locator('.schiff').count()) === 0) {
+  await seite.waitForTimeout(200);
+}
+const schiffDa = (await seite.locator('.schiff').count()) > 0;
+pruefe(schiffDa, 'ein Raumschiff startet im freien Rand');
+
+if (schiffDa) {
+  const standSchiff = async () =>
+    await seite.evaluate(() => {
+      const el = document.querySelector('.schiff');
+      if (!el) return null;
+      const lauf = el.getAnimations().find((a) => a.animationName === 'flug');
+      const k = el.getBoundingClientRect();
+      return {
+        anteil: (lauf?.currentTime ?? 0) / (lauf?.effect?.getTiming()?.duration ?? 1),
+        scaleY: new DOMMatrixReadOnly(getComputedStyle(el).transform).d,
+        x: k.x,
+        breite: k.width,
+        y: k.y,
+      };
+    });
+
+  const kasten = await seite.locator('.bildschirm').boundingBox();
+  const jetzt = await standSchiff();
+  pruefe(
+    jetzt.x + jetzt.breite <= kasten.x + 1 || jetzt.x >= kasten.x + kasten.width - 1,
+    `fliegt neben dem Bildschirmkasten (Schiff ${Math.round(jetzt.x)}..${Math.round(jetzt.x + jetzt.breite)}, Kasten ${Math.round(kasten.x)}..${Math.round(kasten.x + kasten.width)})`,
+  );
+
+  // Die Wende abpassen und belegen: aufrecht, Strich, kopfueber - und das
+  // alles im sichtbaren Bereich.
+  let wende = await standSchiff();
+  while (wende && wende.anteil < 0.465) {
+    await seite.waitForTimeout(60);
+    wende = await standSchiff();
+  }
+  pruefe(
+    wende !== null && Math.abs(wende.scaleY) < 0.9 && wende.y > -10 && wende.y < 120,
+    `Wende sichtbar am oberen Rand (scaleY ${wende?.scaleY.toFixed(2)}, y ${Math.round(wende?.y ?? -999)})`,
+  );
+
+  let ab = await standSchiff();
+  while (ab && ab.anteil < 0.62) {
+    await seite.waitForTimeout(150);
+    ab = await standSchiff();
+  }
+  pruefe(
+    ab !== null && ab.scaleY < -0.9,
+    `sinkt danach kopfueber (scaleY ${ab?.scaleY.toFixed(2)}) - das Schiff ueberlebt seinen Rollflug`,
+  );
+}
+
+// Schmaler Schirm und reduzierte Bewegung: nichts fliegt.
+const eng = await kontext.newPage();
+await eng.setViewportSize({ width: 1200, height: 800 });
+await eng.goto(URL_BASIS, { waitUntil: 'networkidle' });
+await eng.waitForTimeout(8000);
+pruefe(
+  (await eng.locator('.schiff').count()) === 0 && !(await eng.locator('.flugfeld').isVisible()),
+  'bei 1200px bleibt das Flugfeld leer',
+);
+await eng.close();
+
+const still = await browser.newContext({
+  viewport: { width: 1600, height: 900 },
+  reducedMotion: 'reduce',
+});
+const stillSeite = await still.newPage();
+await stillSeite.goto(URL_BASIS, { waitUntil: 'networkidle' });
+await stillSeite.waitForTimeout(8000);
+pruefe(
+  (await stillSeite.locator('.schiff').count()) === 0,
+  'prefers-reduced-motion: keine Raumschiffe',
+);
+await still.close();
+
 await browser.close();
 
 if (fehler.length > 0) {

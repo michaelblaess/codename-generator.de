@@ -7,6 +7,7 @@
 import Base from '../layouts/Base.astro';
 import Generator from './Generator.tsx';
 import Fusszeile from './Fusszeile.astro';
+import Raumschiffe from './Raumschiffe.astro';
 import { themes } from '../lib/generator';
 import { UI, type UiSprache } from '../i18n/ui';
 
@@ -23,6 +24,8 @@ const laufschrift = t.laufschrift.join('   ***   ');
 ---
 
 <Base title={t.seitentitel} description={t.seitenbeschreibung} lang={sprache}>
+  <Raumschiffe />
+
   <div class="bildschirm bildschirm-start">
     <!-- Copper-Balken: der Vorspann faengt oben an. -->
     <div class="copper"></div>
