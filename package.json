@@ -10,7 +10,8 @@
     "check": "astro check",
     "test": "vitest run",
     "daten": "node tools/sync-wordlists.mjs",
-    "musik": "node tools/hole-musik.mjs"
+    "musik": "node tools/hole-musik.mjs",
+    "daten:pruefen": "node tools/sync-wordlists.mjs && git diff --exit-code -- src/data"
   },
   "dependencies": {
     "@astrojs/react": "^4.2.0",

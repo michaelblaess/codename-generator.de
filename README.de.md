@@ -49,6 +49,11 @@ npm run daten     # Wortlisten aus dem Python-Repo nebenan holen
 npm run dev
 ```
 
+**Änderungen am Inhalt betreffen immer beide Fassungen.** Neue Themen, neue Wörter oder
+eine Regeländerung in der Grammatik gehören zuerst ins Python-Repo, danach hier synchronisiert.
+`npm run daten:pruefen` macht den Abgleich und schlägt fehl, sobald die JSON-Dateien vom
+Python-Stand abweichen - der Wächter gegen "vergessen nachzuziehen".
+
 `npm run daten` liest die YAML-Dateien aus `../codename-generator` und schreibt
 `src/data/*.json`. Das Python-Repo bleibt die einzige Quelle - die JSON-Dateien nie von
 Hand bearbeiten. Liegt das Repo woanders, den Pfad mitgeben:

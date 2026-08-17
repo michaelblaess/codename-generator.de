@@ -48,6 +48,11 @@ npm run daten     # pull word lists from the Python repo next door
 npm run dev
 ```
 
+**Content changes always affect both editions.** New themes, new words or a grammar rule
+belong in the Python repo first, then get synced here. `npm run daten:pruefen` runs the sync
+and fails as soon as the JSON files differ from the Python state - the guard against
+forgetting to pull them across.
+
 `npm run daten` reads the YAML files from `../codename-generator` and writes
 `src/data/*.json`. The Python repo stays the single source of truth - never edit the JSON
 by hand. Pass a path if the repo lives elsewhere:
