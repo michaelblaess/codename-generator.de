@@ -2,10 +2,16 @@
 /*
  * Kleine Schiffe in den freien Raendern links und rechts.
  *
- * Sie steigen von unten auf, drehen sich oben um die Querachse und sinken
- * wieder ab - der Wendeeffekt aus Uridium, bei dem das Schiff zu einem Strich
- * zusammenlaeuft und andersherum wieder herauskommt. Waehrend des Flugs rollt
- * es zweimal um die Laengsachse.
+ * Optik: Drahtgitter im Stil des C64-Elite - helle Linien, keine Fuellung.
+ * Die erste Fassung war ein ausgefuelltes Dreieck und sah nach Rakete aus.
+ *
+ * Bewegung, drei Ebenen uebereinander:
+ *   .schiffbahn  seitliches Treiben, damit die Bahn nicht schnurgerade ist
+ *   .schiff      Steigflug mit wechselndem Schub, oben die Wende
+ *   svg          Rollflug um die Laengsachse
+ *
+ * Die Wende ist der Uridium-Effekt: das Schiff laeuft zu einem Strich
+ * zusammen und kommt kopfueber wieder heraus.
  *
  * Drei Bedingungen, sonst passiert gar nichts:
  *   - genug Rand: erst ab 1400px ist links und rechts Platz neben dem
@@ -13,7 +19,6 @@
  *   - prefers-reduced-motion aus.
  *   - der Tab ist sichtbar.
  *
- * Sie laufen NICHT dauernd: nach einem Flug vergeht eine zufaellige Pause.
  * position: fixed und pointer-events: none - der Seitenfluss bleibt
  * unberuehrt, sonst waere die Ein-Bildschirm-Regel hin.
  */
@@ -43,16 +48,18 @@
     }
   }
 
-  .schiff {
+  .schiffbahn {
     position: absolute;
     bottom: -5rem;
-    width: 2.6rem;
-    height: 4rem;
+    animation: pendeln var(--dauer, 15s) ease-in-out forwards;
+  }
+
+  .schiff {
+    width: 3.6rem;
+    height: 2.85rem;
     animation: flug var(--dauer, 15s) linear forwards;
   }
 
-  /* Der Rollflug liegt auf einer eigenen Ebene, damit er den Wendeeffekt
-     der aeusseren Ebene nicht ueberschreibt. */
   .schiff > svg {
     display: block;
     width: 100%;
@@ -60,23 +67,61 @@
     animation: rolle 2.8s ease-in-out var(--rollpause, 3s) 2;
   }
 
+  /*
+   * Der Steigflug haelt keine feste Geschwindigkeit: kurze Schuebe, dann
+   * ausrollen. Zeitanteile und Streckenanteile laufen bewusst auseinander,
+   * daher der Wechsel aus Beschleunigen und Treiben.
+   */
   @keyframes flug {
     0% {
       transform: translateY(0) scaleY(1);
       opacity: 0;
     }
-    6% {
+    5% {
+      transform: translateY(calc(var(--strecke) * -0.03)) scaleY(1);
       opacity: 1;
     }
+    14% {
+      transform: translateY(calc(var(--strecke) * -0.1)) scaleY(1);
+      animation-timing-function: ease-out;
+    }
+    22% {
+      transform: translateY(calc(var(--strecke) * -0.16)) scaleY(1);
+      animation-timing-function: ease-in;
+    }
+    30% {
+      transform: translateY(calc(var(--strecke) * -0.42)) scaleY(1);
+      animation-timing-function: ease-out;
+    }
+    38% {
+      transform: translateY(calc(var(--strecke) * -0.62)) scaleY(1);
+      animation-timing-function: ease-in;
+    }
     44% {
-      transform: translateY(calc(-1 * var(--strecke))) scaleY(1);
+      transform: translateY(calc(var(--strecke) * -1)) scaleY(1);
     }
     /* Die Wende: zu einem Strich zusammen und andersherum wieder auf. */
     47% {
-      transform: translateY(calc(-1 * var(--strecke))) scaleY(0.05);
+      transform: translateY(calc(var(--strecke) * -1)) scaleY(0.05);
     }
     50% {
-      transform: translateY(calc(-1 * var(--strecke))) scaleY(-1);
+      transform: translateY(calc(var(--strecke) * -1)) scaleY(-1);
+      animation-timing-function: ease-in;
+    }
+    58% {
+      transform: translateY(calc(var(--strecke) * -0.7)) scaleY(-1);
+      animation-timing-function: ease-out;
+    }
+    66% {
+      transform: translateY(calc(var(--strecke) * -0.54)) scaleY(-1);
+      animation-timing-function: ease-in;
+    }
+    76% {
+      transform: translateY(calc(var(--strecke) * -0.26)) scaleY(-1);
+      animation-timing-function: ease-out;
+    }
+    86% {
+      transform: translateY(calc(var(--strecke) * -0.14)) scaleY(-1);
     }
     94% {
       transform: translateY(0) scaleY(-1);
@@ -85,6 +130,26 @@
     100% {
       transform: translateY(0) scaleY(-1);
       opacity: 0;
+    }
+  }
+
+  /* Seitliches Treiben. Der Ausschlag steckt in --seit und ist so bemessen,
+     dass das Schiff im freien Rand bleibt. */
+  @keyframes pendeln {
+    0% {
+      transform: translateX(0);
+    }
+    23% {
+      transform: translateX(var(--seit));
+    }
+    52% {
+      transform: translateX(calc(var(--seit) * -1));
+    }
+    78% {
+      transform: translateX(calc(var(--seit) * 0.6));
+    }
+    100% {
+      transform: translateX(0);
     }
   }
 
@@ -106,19 +171,52 @@
 </style>
 
 <script>
-  // Der Rumpf in Gold, die Triebwerke in Magenta - dieselben vier Farben wie
-  // der Rest der Seite, damit es nicht wie ein fremdes Bildchen wirkt.
-  const RUMPF = `<svg viewBox="0 0 21 32" xmlns="http://www.w3.org/2000/svg">
-  <path d="M10.5 0 L14 9 L14 20 L18 24 L18 28 L13 26 L13 30 L8 30 L8 26 L3 28 L3 24 L7 20 L7 9 Z"
-        fill="#e0a82e" stroke="#8a5f14" stroke-width="0.8" stroke-linejoin="round"/>
-  <path d="M10.5 4 L12 10 L9 10 Z" fill="#ffe9a8"/>
-  <rect x="8" y="29" width="2" height="3" fill="#c13bb0"/>
-  <rect x="11" y="29" width="2" height="3" fill="#c13bb0"/>
+  /*
+   * Form nach dem Vorbild der Elite-Schiffe (Cobra, Blick von oben, weil das
+   * Schiff senkrecht fliegt): breiter Keil mit zwei Fluegeln und flachem
+   * Heck. Gefuellt in Gold, nicht als Drahtgitter.
+   *
+   * Die Textur macht zweierlei: die Flaechen sind in Facetten verschiedener
+   * Goldtoene aufgeteilt, das liest sich als Schattierung eines Koerpers,
+   * und darueber liegt ein feines Linienraster. Die Kanten tragen einen
+   * dunklen Rand, sonst verschwimmt das Schiff auf dem schwarzen Grund.
+   */
+  const RUMPF = `<svg viewBox="0 0 48 38" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="schiffRumpf" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff6dd"/>
+      <stop offset="0.45" stop-color="#e8b93f"/>
+      <stop offset="1" stop-color="#b8842a"/>
+    </linearGradient>
+    <pattern id="schiffRaster" width="3" height="3" patternUnits="userSpaceOnUse">
+      <path d="M0 0 L3 3" stroke="#07070c" stroke-width="0.5" opacity="0.35"/>
+    </pattern>
+  </defs>
+  <g stroke="#5c3d0c" stroke-width="0.9" stroke-linejoin="round">
+    <!-- Fluegel: scharf ausgestellt, mit abgeschraegten Spitzen. Der Rumpf
+         muss deutlich schmaler bleiben als die Spannweite, sonst verschmilzt
+         beides zu einem Dreieck - genau daran ist der erste Entwurf
+         gescheitert. -->
+    <path d="M20 14 L1 32 L4 36 L20 36 Z" fill="#a97a22"/>
+    <path d="M28 14 L47 32 L44 36 L28 36 Z" fill="#c8912a"/>
+    <path d="M20 14 L1 32 L4 36 L20 36 Z" fill="url(#schiffRaster)" stroke="none"/>
+    <path d="M28 14 L47 32 L44 36 L28 36 Z" fill="url(#schiffRaster)" stroke="none"/>
+    <!-- Schlanker Rumpf mit der Kerbe zwischen den Triebwerken -->
+    <path d="M24 2 L28 14 L28 36 L26 31 L22 31 L20 36 L20 14 Z" fill="url(#schiffRumpf)"/>
+    <path d="M24 2 L28 14 L28 36 L26 31 L22 31 L20 36 L20 14 Z"
+          fill="url(#schiffRaster)" stroke="none" opacity="0.45"/>
+    <!-- Kanzel -->
+    <path d="M21.5 9 L26.5 9 L27 15 L21 15 Z" fill="#3a1140" stroke="#8a5f14" stroke-width="0.6"/>
+    <!-- Triebwerke links und rechts der Kerbe -->
+    <rect x="20.5" y="31" width="3" height="5" fill="#c13bb0" stroke="#6a1d6e" stroke-width="0.6"/>
+    <rect x="24.5" y="31" width="3" height="5" fill="#c13bb0" stroke="#6a1d6e" stroke-width="0.6"/>
+  </g>
 </svg>`;
 
   const feld = document.querySelector('.flugfeld');
   const ruhig = window.matchMedia('(prefers-reduced-motion: reduce)');
   const breit = window.matchMedia('(min-width: 1400px)');
+  const BREITE = 58;
 
   function zufall(von, bis) {
     return von + Math.random() * (bis - von);
@@ -127,24 +225,31 @@
   function starten() {
     if (!feld || ruhig.matches || !breit.matches || document.hidden) return;
 
+    const bahn = document.createElement('div');
+    bahn.className = 'schiffbahn';
     const schiff = document.createElement('div');
     schiff.className = 'schiff';
     schiff.innerHTML = RUMPF;
+    bahn.appendChild(schiff);
 
-    // Der freie Rand neben dem 78rem breiten Kasten. Die eigene Breite muss
-    // abgezogen werden, sonst ragt das Schiff bei knapp 1400px in den Kasten:
-    // Rand 76px, Spur bis 53px, Breite 42px - das waere ueber der Themenliste.
-    const BREITE = 42;
+    // Der freie Rand neben dem 78rem breiten Kasten. Eigene Breite UND
+    // seitlicher Ausschlag muessen hineinpassen, sonst haengt das Schiff
+    // ueber der Themenliste.
     const rand = (window.innerWidth - 78 * 16) / 2;
-    const spur = zufall(0.1, 0.9) * Math.max(0, rand - BREITE);
+    const frei = Math.max(0, rand - BREITE);
+    const seit = Math.min(26, frei / 2);
+    const grund = seit + zufall(0, Math.max(0, frei - seit * 2));
     if (Math.random() < 0.5) {
-      schiff.style.left = `${spur}px`;
+      bahn.style.left = `${grund}px`;
     } else {
-      schiff.style.right = `${spur}px`;
+      bahn.style.right = `${grund}px`;
     }
 
     const dauer = zufall(13, 19);
-    schiff.style.setProperty('--dauer', `${dauer}s`);
+    for (const el of [bahn, schiff]) {
+      el.style.setProperty('--dauer', `${dauer}s`);
+    }
+    bahn.style.setProperty('--seit', `${seit}px`);
     // Die Strecke ist so bemessen, dass die Wende SICHTBAR am oberen Rand
     // stattfindet. Mit innerHeight + 100 lag sie bei y = -48, also knapp
     // ausserhalb des Bildes - der schoenste Teil war nie zu sehen.
@@ -154,24 +259,26 @@
     // SVG herauf, und ohne diese Pruefung verschwindet das Schiff schon nach
     // der ersten Rolle - gemessen, bevor es je die Wende erreicht hat.
     schiff.addEventListener('animationend', (e) => {
-      if (e.animationName === 'flug') schiff.remove();
+      if (e.animationName === 'flug') bahn.remove();
     });
-    feld.appendChild(schiff);
+    feld.appendChild(bahn);
   }
 
   function planen() {
-    // Erst eine lange Pause, dann ab und zu eins. Dauerbetrieb waere Kirmes.
+    // Oefter als zuvor, aber kein Dauerbetrieb. Gelegentlich zwei kurz
+    // hintereinander - das sieht nach Verkehr aus statt nach Taktgeber.
     window.setTimeout(
       () => {
         starten();
+        if (Math.random() < 0.35) window.setTimeout(starten, zufall(900, 2600));
         planen();
       },
-      zufall(18000, 55000),
+      zufall(9000, 26000),
     );
   }
 
   if (feld && !ruhig.matches && breit.matches) {
-    window.setTimeout(starten, 6000);
+    window.setTimeout(starten, 4000);
     planen();
   }
 </script>

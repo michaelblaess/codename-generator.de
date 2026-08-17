@@ -11,6 +11,7 @@ import {
 } from '../lib/generator';
 import { randomSeed } from '../lib/rng';
 import { UI, type UiSprache } from '../i18n/ui';
+import Musik from './Musik';
 
 const LANGUAGE_LABELS: Record<string, string> = { en: 'ENGLISH', de: 'DEUTSCH' };
 const COUNTS = [10, 20, 30, 40];
@@ -314,6 +315,7 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
             >
               {t.nameKopieren}
             </FTaste>
+            <Musik sprache={sprache} />
             <FTaste
               onClick={adresseKopieren}
               title={t.titelAdresseKopieren}

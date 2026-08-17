@@ -294,6 +294,52 @@ pruefe(
   'englische Beschriftung im Bedienfeld',
 );
 
+// 10b. Der Musikknopf. Drei Aussagen stehen auf dem Spiel: er laedt nichts
+//      ungefragt, er spielt nach dem Klick wirklich, und ohne ausgelieferte
+//      Datei taucht er gar nicht erst auf (fail-closed wie in geo-finder).
+await seite.setViewportSize({ width: 1400, height: 900 });
+await seite.goto(URL_BASIS, { waitUntil: 'networkidle' });
+await held.waitFor({ timeout: 10000 });
+const musikKnopf = seite.getByRole('button', { name: /MUSIK$/ });
+const knopfDa = (await musikKnopf.count()) === 1;
+pruefe(knopfDa, 'Musikknopf ist da (Datei wird ausgeliefert)');
+
+if (knopfDa) {
+  // Eine Anfrage gibt es vor dem Klick: die HEAD-Pruefung, ob die Datei
+  // ueberhaupt ausgeliefert wird. Die uebertraegt keine Musik. Gemessen wird
+  // deshalb die uebertragene Menge, nicht die Zahl der Anfragen.
+  const vorher = await seite.evaluate(() =>
+    performance
+      .getEntriesByType('resource')
+      .filter((e) => /bit-space/.test(e.name))
+      .reduce((summe, e) => summe + (e.transferSize || 0), 0),
+  );
+  pruefe(vorher < 5000, `vor dem Klick fliessen keine Musikdaten (${vorher} Bytes)`);
+
+  await musikKnopf.click();
+  await seite.waitForTimeout(1500);
+  const zustand = await seite.evaluate(() => {
+    const ton = document.querySelector('audio');
+    return ton ? { pausiert: ton.paused, zeit: ton.currentTime, quelle: ton.currentSrc } : null;
+  });
+  pruefe(
+    zustand !== null && !zustand.pausiert && zustand.zeit > 0,
+    `nach dem Klick laeuft die Musik (Zeit ${zustand?.zeit.toFixed(2)}s, Quelle ${(zustand?.quelle ?? '').split('/').pop()})`,
+  );
+}
+
+// Fail-closed: eine Seite ohne ausgelieferte Musik zeigt keinen Knopf. Statt
+// die Dateien zu loeschen, werden die Anfragen darauf abgewiesen.
+const ohneMusik = await kontext.newPage();
+await ohneMusik.route('**/musik/*', (weg) => weg.abort());
+await ohneMusik.goto(URL_BASIS, { waitUntil: 'networkidle' });
+await ohneMusik.waitForTimeout(1200);
+pruefe(
+  (await ohneMusik.getByRole('button', { name: /MUSIK$/ }).count()) === 0,
+  'ohne ausgelieferte Musik erscheint kein Knopf',
+);
+await ohneMusik.close();
+
 // 11. Die Raumschiffe in den Raendern. Drei Dinge koennen still brechen: der
 //     Astro-Scope frisst die Klassen (dann fliegt nichts), das Schiff haengt
 //     ueber dem Inhalt, oder die Wende passiert ausserhalb des Bildes.

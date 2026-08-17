@@ -63,6 +63,13 @@ export const IMPRESSUM: Record<UiSprache, Rechtstext> = {
         ],
       },
       {
+        titel: 'Musik',
+        zeilen: [
+          'Der Titel heißt "BIT SPACE (FTL Inspired) [LOOP]", er stammt von Beam Theory und steht unter der OGA-BY 3.0. Quelle: https://opengameart.org/content/bit-space-ftl-inspired-loop-0',
+          'Der Titel wird unverändert und in voller Länge abgespielt. Er lädt erst, wenn du auf den Musikknopf drückst.',
+        ],
+      },
+      {
         titel: 'Marken',
         zeilen: [
           'Genannte Marken und Produktnamen gehören ihren jeweiligen Inhabern. Sie werden hier ausschließlich beschreibend genannt, es besteht keine Verbindung zu den Rechteinhabern und keine Empfehlung durch sie.',
@@ -102,6 +109,13 @@ export const IMPRESSUM: Record<UiSprache, Rechtstext> = {
         zeilen: [
           '© 2026 Michael Blaess. The source code is Apache License 2.0 and public on GitHub.',
           'Press Start 2P, Bungee and IBM Plex Mono are licensed under the SIL Open Font License.',
+        ],
+      },
+      {
+        titel: 'Music',
+        zeilen: [
+          'The track is "BIT SPACE (FTL Inspired) [LOOP]" by Beam Theory, licensed under OGA-BY 3.0. Source: https://opengameart.org/content/bit-space-ftl-inspired-loop-0',
+          'It is played unchanged and in full. It only loads once you press the music button.',
         ],
       },
       {
@@ -147,6 +161,7 @@ export const DATENSCHUTZ: Record<UiSprache, Rechtstext> = {
           'Es werden keine Cookies gesetzt, weder technisch notwendige noch andere. Es wird nichts in localStorage oder sessionStorage abgelegt. Deshalb gibt es hier auch keinen Einwilligungsbanner - es gibt nichts einzuwilligen.',
           'Es findet keine Reichweitenmessung statt: kein Google Analytics, kein Matomo, kein Zählpixel.',
           'Die eingestellte Sprache und ein geteilter Stapel Namen stehen in der Adresse selbst, nicht in einem Speicher deines Browsers.',
+          'Die Hintergrundmusik wird erst nach einem Klick auf den Musikknopf geladen, und zwar von demselben Server wie die Seite. Es wird dabei kein fremder Dienst kontaktiert.',
         ],
       },
       {
@@ -194,6 +209,7 @@ export const DATENSCHUTZ: Record<UiSprache, Rechtstext> = {
           'No cookies are set, neither strictly necessary ones nor any others. Nothing is written to localStorage or sessionStorage. That is also why there is no consent banner here - there is nothing to consent to.',
           'There is no audience measurement: no Google Analytics, no Matomo, no tracking pixel.',
           'The chosen language and a shared batch of names live in the address itself, not in the storage of your browser.',
+          'The background music is only fetched after you press the music button, and it comes from the same server as the page. No third-party service is contacted.',
         ],
       },
       {

@@ -36,6 +36,10 @@ export interface UiTexte {
   titelAdresseKopieren: string;
   titelMutation: string;
   titelWortzahlFest: string;
+  musikAn: string;
+  musikAus: string;
+  titelMusik: string;
+  musikNachweis: string;
   meldungKopiert: (was: string, text: string) => string;
   meldungGesperrt: string;
   meldungNeueRunde: string;
@@ -77,6 +81,10 @@ const de: UiTexte = {
   titelMutation:
     'Verbiegt die Wörter phonetisch: aus Pegasus wird Pegasos. Betroffene Namen tragen MUT.',
   titelWortzahlFest: 'Dieses Thema gibt die Wortzahl vor',
+  musikAn: 'MUSIK',
+  musikAus: 'MUSIK AUS',
+  titelMusik: 'BIT SPACE (FTL Inspired) [LOOP] von Beam Theory, OGA-BY 3.0 - laedt erst beim Klick',
+  musikNachweis: 'MUSIK: BIT SPACE VON BEAM THEORY, OGA-BY 3.0, OPENGAMEART.ORG',
   meldungKopiert: (was, text) => `${was} KOPIERT: ${text}`,
   meldungGesperrt: 'ZWISCHENABLAGE GESPERRT - TEXT MARKIEREN',
   meldungNeueRunde: 'NEUE RUNDE',
@@ -94,6 +102,7 @@ const de: UiTexte = {
     'IM DEUTSCHEN WIRD DER ZUSATZ GEBEUGT: STILLER FALKE - STILLE EULE - STILLES WIESEL',
     'DIESELBEN WORTLISTEN TREIBEN DIE TERMINALFASSUNG AN: GITHUB.COM/MICHAELBLAESS/CODENAME-GENERATOR',
     'NAMEN KÖNNEN MIT BESTEHENDEN PRODUKTNAMEN ZUSAMMENFALLEN - VOR VERWENDUNG PRÜFEN',
+    'MUSIK: BIT SPACE VON BEAM THEORY, OGA-BY 3.0, OPENGAMEART.ORG',
     'MICHAEL BLAESS 2026 - APACHE 2.0 - SCHRIFTEN PRESS START 2P UND BUNGEE (OFL)',
   ],
 };
@@ -125,6 +134,10 @@ const en: UiTexte = {
   titelMutation:
     'Bends words phonetically: Pegasus becomes Pegasos. Affected names are marked MUT.',
   titelWortzahlFest: 'This theme sets the word count',
+  musikAn: 'MUSIC',
+  musikAus: 'MUSIC OFF',
+  titelMusik: 'BIT SPACE (FTL Inspired) [LOOP] by Beam Theory, OGA-BY 3.0 - loads only when you click',
+  musikNachweis: 'MUSIC: BIT SPACE BY BEAM THEORY, OGA-BY 3.0, OPENGAMEART.ORG',
   meldungKopiert: (was, text) => `${was} COPIED: ${text}`,
   meldungGesperrt: 'CLIPBOARD BLOCKED - SELECT THE TEXT',
   meldungNeueRunde: 'NEW ROUND',
@@ -142,6 +155,7 @@ const en: UiTexte = {
     'GERMAN INFLECTS THE MODIFIER: STILLER FALKE - STILLE EULE - STILLES WIESEL',
     'THE SAME WORD LISTS DRIVE THE TERMINAL VERSION: GITHUB.COM/MICHAELBLAESS/CODENAME-GENERATOR',
     'NAMES MAY COLLIDE WITH EXISTING PRODUCT NAMES - CHECK BEFORE YOU USE ONE',
+    'MUSIC: BIT SPACE BY BEAM THEORY, OGA-BY 3.0, OPENGAMEART.ORG',
     'MICHAEL BLAESS 2026 - APACHE 2.0 - TYPEFACES PRESS START 2P AND BUNGEE (OFL)',
   ],
 };

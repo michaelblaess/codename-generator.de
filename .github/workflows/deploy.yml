@@ -28,6 +28,10 @@ jobs:
       - run: npm ci
       - name: Tests (vitest)
         run: npm test
+      # Fremde Musik liegt nicht im Repo. Schlaegt das Holen fehl, geht die
+      # Seite ohne Musikknopf live - das Skript beendet sich absichtlich mit 0.
+      - name: Musik holen
+        run: npm run musik
       - name: Build (astro)
         run: npm run build
       - uses: actions/upload-pages-artifact@v5

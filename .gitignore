@@ -15,3 +15,6 @@ fx-*.png
 
 # Interne Planungsnotizen - gehoeren nicht ins oeffentliche Repo
 PLAN*.md
+
+# Fremde Musik wird zur Build-Zeit geholt (tools/hole-musik.mjs), nicht committet.
+public/musik/
