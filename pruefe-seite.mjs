@@ -52,6 +52,17 @@ await seite.goto(URL_BASIS, { waitUntil: 'networkidle' });
 //    klaglos gegen ein fremdes Projekt.
 pruefe((await seite.title()).includes('Codename'), 'richtige Seite geladen');
 
+// 0b. Die Version im Titel kommt aus der package.json. Der Test liest sie
+//     dort und vergleicht - eine handgepflegte Zahl im Markup faellt damit
+//     sofort auf.
+const paketVersion = JSON.parse(readFileSync('package.json', 'utf8')).version;
+const kurzVersion = paketVersion.split('.').slice(0, 2).join('.');
+const titelzeile = (await seite.locator('h1').first().innerText()).trim();
+pruefe(
+  titelzeile.includes(`V${kurzVersion}`),
+  `Version im Titel: "${titelzeile}" (package.json ${paketVersion})`,
+);
+
 // 1. Plakette und Karten stehen.
 const held = seite.locator('.held');
 await held.waitFor({ timeout: 10000 });
