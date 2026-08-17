@@ -447,27 +447,57 @@ pruefe(
 // Genau daran ist die erste Fassung gescheitert: Zeilenhoehe und Cursor
 // waren beide 8px, trotzdem sass der Block sichtbar zu tief, weil die
 // Grossbuchstaben von Press Start 2P 1px ueber der Grundlinie enden.
-const zelle = await seite.evaluate(() => {
-  const feld = document.getElementById('statuszeile');
-  const stil = getComputedStyle(feld);
-  const bild = document.createElement('canvas').getContext('2d');
-  bild.font = `${stil.fontSize} ${stil.fontFamily}`;
-  const m = bild.measureText('READY.');
-  const nach = getComputedStyle(feld.querySelector('.blinker'), '::after');
-  return {
-    tinteHoehe: m.actualBoundingBoxAscent + m.actualBoundingBoxDescent,
-    unterkante: -m.actualBoundingBoxDescent,
-    zeichen: bild.measureText('M').width,
-    breite: parseFloat(nach.width),
-    hoehe: parseFloat(nach.height),
-    versatz: parseFloat(nach.verticalAlign),
-  };
+// Gezaehlt werden die GEMALTEN Bildzeilen, nicht Schriftmetriken. Zwei
+// Anlaeufe ueber measureText sahen rechnerisch richtig aus und wirkten im
+// Browser trotzdem zu klein - Rundung beim Rastern schlaegt jede Metrik.
+// Der goldene Block muss die gruene Schrift vollstaendig einschliessen.
+await seite.evaluate(() => {
+  const stil = document.createElement('style');
+  stil.id = 'blinker-anhalten';
+  stil.textContent = '.blinker::after { animation: none !important; }';
+  document.head.appendChild(stil);
 });
+const statusKasten = await seite.locator('#statuszeile').boundingBox();
+const statusBild = await seite.screenshot({
+  clip: {
+    x: statusKasten.x - 2,
+    y: statusKasten.y - 5,
+    width: statusKasten.width + 12,
+    height: statusKasten.height + 10,
+  },
+});
+const zeilen = await seite.evaluate(async (b64) => {
+  const img = new Image();
+  img.src = `data:image/png;base64,${b64}`;
+  await img.decode();
+  const c = document.createElement('canvas');
+  c.width = img.width;
+  c.height = img.height;
+  const ctx = c.getContext('2d');
+  ctx.drawImage(img, 0, 0);
+  const d = ctx.getImageData(0, 0, c.width, c.height).data;
+  const gruen = [];
+  const gold = [];
+  for (let y = 0; y < c.height; y++) {
+    let hatGruen = false;
+    let hatGold = false;
+    for (let x = 0; x < c.width; x++) {
+      const i = (y * c.width + x) * 4;
+      const [r, g, b] = [d[i], d[i + 1], d[i + 2]];
+      if (g > 120 && r < 160 && b < 120) hatGruen = true;
+      if (r > 180 && g > 120 && b < 110) hatGold = true;
+    }
+    if (hatGruen) gruen.push(y);
+    if (hatGold) gold.push(y);
+  }
+  return { gruen, gold };
+}, statusBild.toString('base64'));
+await seite.evaluate(() => document.getElementById('blinker-anhalten')?.remove());
+const g = zeilen.gruen;
+const c = zeilen.gold;
 pruefe(
-  Math.abs(zelle.breite - zelle.zeichen) < 0.6 &&
-    Math.abs(zelle.hoehe - zelle.tinteHoehe) < 0.6 &&
-    Math.abs(zelle.versatz - zelle.unterkante) < 0.6,
-  `Cursor deckt die Buchstabenhoehe (${zelle.breite}x${zelle.hoehe}px bei ${zelle.versatz}px ueber der Grundlinie, Tinte ${zelle.tinteHoehe}px ab ${zelle.unterkante}px)`,
+  g.length > 0 && c.length > 0 && c[0] <= g[0] && c[c.length - 1] >= g[g.length - 1],
+  `Cursor schliesst die Schrift ein (Schrift Zeile ${g[0]}..${g[g.length - 1]}, Cursor ${c[0]}..${c[c.length - 1]})`,
 );
 
 // Das Schiff darf nach der Kippung nicht gedrungen wirken: das gezeichnete

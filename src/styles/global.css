@@ -228,27 +228,39 @@ a:focus-visible {
  * man ihn zwischen den anderen Tasten. Nach dem ersten Klick ist Schluss,
  * ein dauerhaft blinkender Knopf waere Kirmes.
  */
-/* Nur das Dreieck blinkt, hart wie ein Cursor. Den ganzen Knopf pulsieren zu
- * lassen war zu laut - er fiel aus der Reihe der anderen Tasten. */
+/* Der Musikknopf blinkt vollflaechig, solange er nie benutzt wurde: harter
+ * Wechsel in die Umkehrdarstellung, wie ein invertiertes Feld auf dem C64.
+ * Zwei Vorstufen waren schlechter - ein weiches Pulsieren von Rand und Flaeche
+ * (zu unruhig) und ein blinkendes Dreieck allein (ging unter). */
+.ftaste.lockt {
+  animation: locken 1.1s steps(1) infinite;
+}
+
 .ftaste.lockt .ftaste-kuerzel {
-  animation: locken 1s steps(1) infinite;
+  color: inherit;
 }
 
 @keyframes locken {
   0%,
-  60% {
-    color: var(--gold-hell);
+  55% {
+    background: #140b1a;
+    border-color: var(--magenta-tief);
+    color: var(--creme);
   }
-  61%,
+  56%,
   100% {
-    color: var(--magenta-tief);
+    background: var(--gold);
+    border-color: var(--gold-hell);
+    color: var(--schwarz);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ftaste.lockt .ftaste-kuerzel {
+  .ftaste.lockt {
     animation: none;
-    color: var(--gold-hell);
+    background: var(--gold);
+    border-color: var(--gold-hell);
+    color: var(--schwarz);
   }
 }
 
@@ -340,12 +352,16 @@ input[type='range']::-moz-range-thumb {
   content: '';
   display: inline-block;
   width: 1ch;
-  /* An der gemessenen Tinte ausgerichtet, nicht an der Zeilenhoehe: die
-   * Grossbuchstaben von Press Start 2P reichen 8px ueber die Grundlinie und
-   * enden 1px darueber (canvas measureText, 8px Schrift). Der Block ist
-   * deshalb 0.875em hoch und sitzt 0.125em ueber der Grundlinie - vorher
-   * stand er 1,28px darunter und wirkte verrutscht. */
-  height: 0.875em;
+  /* Eine volle Zeichenzelle: 1ch breit, 1em hoch, um 0.125em ueber die
+   * Grundlinie gehoben.
+   *
+   * Vorher stand hier 0.875em, die per canvas measureText gemessene Tinte der
+   * Grossbuchstaben (8px Aufstieg, Ende 1px ueber der Grundlinie). Das ist in
+   * Chromium pixelgenau deckungsgleich - Michaels Browser malt die Zeichen
+   * aber eine Zeile hoeher, und dort wirkte der Block zu klein. An der
+   * em-Box festgemacht kann er nie kleiner sein als die Schrift, hoechstens
+   * eine Zeile hoeher - und genau so sieht ein Blockcursor auch aus. */
+  height: 1em;
   margin-left: 0.2em;
   vertical-align: 0.125em;
   background: var(--gold);
