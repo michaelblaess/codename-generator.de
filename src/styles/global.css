@@ -228,28 +228,27 @@ a:focus-visible {
  * man ihn zwischen den anderen Tasten. Nach dem ersten Klick ist Schluss,
  * ein dauerhaft blinkender Knopf waere Kirmes.
  */
-.ftaste.lockt {
-  animation: locken 1.5s ease-in-out infinite;
+/* Nur das Dreieck blinkt, hart wie ein Cursor. Den ganzen Knopf pulsieren zu
+ * lassen war zu laut - er fiel aus der Reihe der anderen Tasten. */
+.ftaste.lockt .ftaste-kuerzel {
+  animation: locken 1s steps(1) infinite;
 }
 
 @keyframes locken {
   0%,
-  100% {
-    border-color: var(--magenta-tief);
-    background: #140b1a;
-    color: var(--creme);
-  }
-  50% {
-    border-color: var(--gold-hell);
-    background: var(--lila);
+  60% {
     color: var(--gold-hell);
+  }
+  61%,
+  100% {
+    color: var(--magenta-tief);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ftaste.lockt {
+  .ftaste.lockt .ftaste-kuerzel {
     animation: none;
-    border-color: var(--gold);
+    color: var(--gold-hell);
   }
 }
 
