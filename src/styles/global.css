@@ -1,6 +1,29 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/*
+ * Tailwind 4 kennt keine tailwind.config.mjs mehr - eigene Farben und
+ * Schriften stehen als @theme hier. Aus --color-gold wird die Utility
+ * bg-gold/text-gold, aus --font-pixel die Utility font-pixel.
+ *
+ * Die kurzen Namen darunter (--gold, --magenta, ...) bleiben erhalten und
+ * zeigen auf die Theme-Werte: das handgeschriebene CSS in dieser Datei nutzt
+ * sie an ueber hundert Stellen.
+ */
+@theme {
+  --color-schwarz: #07070c;
+  --color-gold-hell: #ffe9a8;
+  --color-gold: #e0a82e;
+  --color-gold-tief: #8a5f14;
+  --color-magenta: #c13bb0;
+  --color-magenta-tief: #6a1d6e;
+  --color-lila: #3a1140;
+  --color-gruen: #7bb04e;
+  --color-creme: #f0e6d2;
+  --color-dunst: #a08fb0;
+
+  --font-mono: PlexMono, Consolas, "DejaVu Sans Mono", monospace;
+  --font-pixel: PressStart, PlexMono, monospace;
+}
 
 /*
  * Goldrunner, Atari ST 1987. Schwarzer Grund, goldenes Schiff, Magenta-Stadt,
@@ -12,18 +35,18 @@
  * die Seite selbst nicht.
  */
 :root {
-  --schwarz: #07070c;
+  --schwarz: var(--color-schwarz);
   --tiefschwarz: #000000;
-  --gold-hell: #ffe9a8;
-  --gold: #e0a82e;
-  --gold-tief: #8a5f14;
-  --magenta: #c13bb0;
-  --magenta-tief: #6a1d6e;
-  --lila: #3a1140;
-  --gruen: #7bb04e;
+  --gold-hell: var(--color-gold-hell);
+  --gold: var(--color-gold);
+  --gold-tief: var(--color-gold-tief);
+  --magenta: var(--color-magenta);
+  --magenta-tief: var(--color-magenta-tief);
+  --lila: var(--color-lila);
+  --gruen: var(--color-gruen);
   --gruen-tief: #24401c;
-  --creme: #f0e6d2;
-  --dunst: #a08fb0;
+  --creme: var(--color-creme);
+  --dunst: var(--color-dunst);
 }
 
 html {

@@ -1,7 +1,7 @@
 import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
-import tailwind from '@astrojs/tailwind';
 import sitemap from '@astrojs/sitemap';
+import tailwindcss from '@tailwindcss/vite';
 
 /*
  * Solange die Seite unter michaelblaess.github.io/codename-generator.de/ liegt,
@@ -20,7 +20,11 @@ const BASE = '/codename-generator.de';
 export default defineConfig({
   site: SITE,
   base: BASE,
-  integrations: [react(), tailwind({ applyBaseStyles: false }), sitemap()],
+  integrations: [react(), sitemap()],
+  // Tailwind kommt seit Fassung 4 als Vite-Plugin. Die frueheren
+  // Basis-Stile (applyBaseStyles) stecken jetzt in @import "tailwindcss"
+  // in src/styles/global.css.
+  vite: { plugins: [tailwindcss()] },
   prefetch: { prefetchAll: true, defaultStrategy: 'viewport' },
   build: { format: 'directory' },
 });

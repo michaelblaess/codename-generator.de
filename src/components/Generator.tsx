@@ -240,7 +240,7 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
         )}
 
       {/* --- Der Name, gross und in Gold --- */}
-      <section className="border-y-2 border-goldTief bg-black/40 px-4 py-3 text-center">
+      <section className="border-y-2 border-gold-tief bg-black/40 px-4 py-3 text-center">
         <p className="pixel mb-2 text-[0.5rem] text-magenta">
           {theme?.name.toUpperCase()} · {language.toUpperCase()} · MUT {mutation}% ·{' '}
           {String(aktiv + 1).padStart(2, '0')}/{String(suggestions.length).padStart(2, '0')}
@@ -255,7 +255,7 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
           <button
             type="button"
             onClick={() => held && kopieren(held.slug, t.wortKurzform)}
-            className="text-gruen underline decoration-dotted underline-offset-4 hover:text-goldHell"
+            className="text-gruen underline decoration-dotted underline-offset-4 hover:text-gold-hell"
             title={t.kurzformKopieren}
           >
             {held?.slug}
