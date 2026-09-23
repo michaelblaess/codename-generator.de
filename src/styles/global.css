@@ -212,6 +212,48 @@ body {
   color: var(--gruen);
 }
 
+/* --- Themenliste ---------------------------------------------------------
+ * Merkliste und eigenes Wort stehen oben in derselben Liste wie die Themen,
+ * so wie Favorites und Custom Seed in der TUI.
+ */
+.thema-eintrag {
+  display: flex;
+  width: 100%;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.1rem 0.5rem;
+  text-align: left;
+}
+
+/* --- Eingabezeile (eigenes Wort, eigene Idee) ------------------------------*/
+.eingabe {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.eingabe input {
+  flex: 1;
+  min-width: 0;
+  border: 2px solid var(--magenta-tief);
+  background: #0d0a14;
+  color: var(--gold-hell);
+  padding: 0.2rem 0.5rem;
+  font-size: 0.88rem;
+}
+
+.eingabe input::placeholder {
+  color: var(--dunst);
+  opacity: 0.7;
+}
+
+.eingabe input:focus-visible {
+  outline: 2px solid var(--gold-hell);
+  outline-offset: 2px;
+  border-color: var(--magenta);
+}
+
 /* --- Tasten --------------------------------------------------------------*/
 .ftaste {
   border: 2px solid var(--magenta-tief);
@@ -233,6 +275,17 @@ body {
 
 .ftaste-kuerzel {
   color: var(--gold);
+}
+
+/* In der Merkliste wirken Wortzahl, Zeilen und neue Runde nicht. */
+.ftaste:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.ftaste:disabled:hover {
+  border-color: var(--magenta-tief);
+  background: #140b1a;
 }
 
 .ftaste[aria-pressed='true'] .ftaste-kuerzel {

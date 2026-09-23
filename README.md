@@ -29,14 +29,22 @@ tracking, nothing leaves the page.
   built from proper names (gods, racehorses, Swatch models) work in both languages.
 - **Phonetic mutation** nudges a word off the dictionary: `Pegasus -> Pegasos`. A `*` marks
   a mutated suggestion.
+- **Your own word** (key `i`): your word is combined with the modifiers of the chosen
+  language, so `Sitemap` becomes `Obsidian Sitemap` or `Sitemap Proxy`. No name appears
+  twice in a batch. The address `?word=Sitemap` opens this view directly.
+- **Shortlist** (key `f` keeps a name, `v` shows the list): kept names stay in your
+  browser, and the mutation slider still applies to them. `+` adds ideas of your own,
+  `Copy list` puts all names on the clipboard, one per line. The storage format is the one
+  the TUI uses for its favorites.
 - **Permalinks.** Every batch has a seed - the `Link` button copies a URL that reproduces
   exactly that batch.
 - **Two interface languages.** German lives at `/`, English at `/en/`, both built from
   one dictionary (`src/i18n/ui.ts`). The interface language is separate from the language
   of the generated names, which stays switchable in the panel.
 - **Legal pages** for the German requirements: imprint under § 5 DDG and a privacy policy
-  that describes what the site actually does - no cookies, no storage, no analytics. The
-  smoketest measures that claim instead of trusting it.
+  that describes what the site actually does - no cookies, no analytics, localStorage only
+  for the shortlist and only after you keep your first name. The smoketest measures those
+  claims instead of trusting them.
 - **Retro effects** via [retro-text-effects](https://github.com/michaelblaess/retro-text-effects.js),
   respecting `prefers-reduced-motion`.
 

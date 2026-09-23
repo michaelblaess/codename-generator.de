@@ -8,7 +8,7 @@ import themesData from '../data/themes.json';
 import modifiersData from '../data/modifiers.json';
 import { GERMAN, inflectAttribute } from './grammar';
 import { mutate } from './phonetic';
-import { Rng, randomSeed } from './rng';
+import { Rng, randomSeed, seedFromString } from './rng';
 
 export const RANDOM_THEME_SLUG = 'random';
 export const DEFAULT_LANGUAGE = 'en';
@@ -335,6 +335,151 @@ export function suggest(options: SuggestOptions): { suggestions: Suggestion[]; s
 
   const rng = new Rng(seed);
   const recipes = generateRecipes(theme, count, language, rng);
+  return {
+    suggestions: recipes.map((r) => render(r, theme, wordCount, mutationChance, language)),
+    seed,
+  };
+}
+
+/** Setzt einen Namen aus Pattern, Themenwort und (schon gebeugten) Modifiern zusammen. */
+export function composeName(pattern: Pattern, themeWord: string, modifiers: string[]): string {
+  switch (pattern) {
+    case 'theme':
+      return themeWord;
+    case 'theme-verb':
+    case 'theme-agent':
+      return modifiers.length > 0 ? `${themeWord} ${modifiers[0]}` : themeWord;
+    case 'adj-theme-verb':
+      return modifiers.length >= 2 ? `${modifiers[0]} ${themeWord} ${modifiers[1]}` : themeWord;
+    case 'adj-verb-theme':
+      return modifiers.length >= 2 ? `${modifiers[0]} ${modifiers[1]} ${themeWord}` : themeWord;
+    default:
+      // adj-theme und verb-theme: Modifier vorangestellt.
+      return modifiers.length > 0 ? `${modifiers[0]} ${themeWord}` : themeWord;
+  }
+}
+
+/**
+ * Rendert einen gemerkten Namen mit der aktuellen Mutation neu. Pattern und
+ * Modifier bleiben, nur das Themenwort (erstes Quellwort) kann mutieren. Der
+ * Zufall haengt am Slug, damit der Regler nicht flackert.
+ */
+export function renderFavorite(favorite: Suggestion, mutationChance: number): Suggestion {
+  if (favorite.sourceWords.length === 0) return favorite;
+  const [themeWord, ...modifiers] = favorite.sourceWords;
+  const rng = new Rng(seedFromString(favorite.slug));
+  let rendered = themeWord;
+  let mutated = false;
+  if (rng.random() < mutationChance) {
+    for (let i = 0; i < MUTATION_RETRIES; i += 1) {
+      const candidate = mutate(themeWord, rng);
+      if (candidate !== themeWord) {
+        rendered = candidate;
+        mutated = true;
+        break;
+      }
+    }
+  }
+  const name = composeName(favorite.pattern, rendered, modifiers);
+  return {
+    name: titleCase(name),
+    slug: slugify(name),
+    pattern: favorite.pattern,
+    mutated,
+    sourceWords: favorite.sourceWords,
+  };
+}
+
+/** Virtuelles Thema fuer ein eigenes Wort: nur dieses Wort, Modifier der gewaehlten Sprache. */
+export function seededTheme(word: string, language: string): WordList {
+  return {
+    slug: 'custom-seed',
+    name: word,
+    description: '',
+    words: [word],
+    genders: [],
+    adjectives: [],
+    verbs: [],
+    patterns: [],
+    mutate: true,
+    defaultMutation: null,
+    language,
+  };
+}
+
+/**
+ * Position und Modifier, die ein Zwei-Wort-Pattern tatsaechlich im Namen zeigt.
+ * Die Position gehoert in den Schluessel, das Pattern nicht: manche Woerter
+ * stehen in zwei Pools ("forge" ist Verb und Agent).
+ */
+function visibleModifier(pattern: Pattern, adjective: string, verb: string, agent: string): string {
+  if (pattern === 'adj-theme') return `prefix|${adjective.toLowerCase()}`;
+  if (pattern === 'verb-theme') return `prefix|${verb.toLowerCase()}`;
+  // theme-verb und theme-agent haengen an, ohne Agent-Pool das Verb.
+  const suffix = pattern === 'theme-agent' && agent ? agent : verb;
+  return `suffix|${suffix.toLowerCase()}`;
+}
+
+/**
+ * Rezepte mit festem Themenwort. Dedupliziert wird auf dem, was im Namen
+ * sichtbar ist - bei zwei Woertern der eine Modifier, bei drei Adjektiv plus
+ * Verb. So kommt kein Name doppelt vor (wie in der TUI).
+ */
+function generateSeededRecipes(word: string, count: number, language: string, rng: Rng): Recipe[] {
+  const adjectives = modifierPool(language, 'adjectives');
+  const verbs = modifierPool(language, 'verbs');
+  const agents = modifierPool(language, 'agents');
+  const patterns = twoWordPatterns(language);
+  const recipes: Recipe[] = [];
+  const seenTwo = new Set<string>();
+  const seenThree = new Set<string>();
+  const maxAttempts = count * 40;
+  for (let attempt = 0; attempt < maxAttempts && recipes.length < count; attempt += 1) {
+    const adjective = adjectives.length > 0 ? rng.choice(adjectives) : '';
+    const verb = verbs.length > 0 ? rng.choice(verbs) : '';
+    const agent = agents.length > 0 ? rng.choice(agents) : '';
+    const patternIndex = rng.range(patterns.length);
+    const keyTwo = visibleModifier(patterns[patternIndex], adjective, verb, agent);
+    const keyThree = `${adjective}|${verb}`.toLowerCase();
+    if (seenTwo.has(keyTwo) || seenThree.has(keyThree)) continue;
+    seenTwo.add(keyTwo);
+    seenThree.add(keyThree);
+    recipes.push({
+      themeWord: word,
+      adjective,
+      verb,
+      agent,
+      patternIndex,
+      mutationRoll: rng.random(),
+      mutationSeed: rng.range(0x7fffffff),
+    });
+  }
+  return recipes;
+}
+
+export interface SeededOptions {
+  word: string;
+  count?: number;
+  mutationChance?: number;
+  wordCount?: number;
+  language?: string;
+  seed?: number;
+}
+
+/** Stapel zu einem eigenen Wort ("Sitemap" -> "Silent Sitemap", "Sitemap Runner"). */
+export function suggestSeeded(options: SeededOptions): { suggestions: Suggestion[]; seed: number } {
+  const {
+    word,
+    count = 20,
+    mutationChance = 0.35,
+    wordCount = 2,
+    language = DEFAULT_LANGUAGE,
+    seed = randomSeed(),
+  } = options;
+  const trimmed = word.trim();
+  if (!trimmed) return { suggestions: [], seed };
+  const theme = seededTheme(trimmed, language);
+  const recipes = generateSeededRecipes(trimmed, count, language, new Rng(seed));
   return {
     suggestions: recipes.map((r) => render(r, theme, wordCount, mutationChance, language)),
     seed,

@@ -51,6 +51,30 @@ export interface UiTexte {
   quellcode: string;
   andereSpracheName: string;
   zurueck: string;
+  merkliste: string;
+  eigenesWort: string;
+  deinWort: string;
+  platzhalterWort: string;
+  eigeneIdee: string;
+  platzhalterIdee: string;
+  dazu: string;
+  merken: string;
+  entfernen: string;
+  listeKopieren: string;
+  titelMerken: string;
+  titelEntfernen: string;
+  titelListeKopieren: string;
+  titelMerkliste: string;
+  titelEigenesWort: string;
+  titelEigeneIdee: string;
+  leerMerkliste: string;
+  leerWort: string;
+  meldungGemerkt: (name: string) => string;
+  meldungEntfernt: (name: string) => string;
+  meldungSchonDa: string;
+  meldungSpeicherGesperrt: string;
+  meldungKeineRunde: string;
+  wortListe: string;
   laufschrift: string[];
 }
 
@@ -96,9 +120,34 @@ const de: UiTexte = {
   quellcode: 'QUELLCODE',
   andereSpracheName: 'ENGLISH',
   zurueck: 'ZURÜCK ZUM GENERATOR',
+  merkliste: 'MERKLISTE',
+  eigenesWort: 'EIGENES WORT',
+  deinWort: 'DEIN WORT',
+  platzhalterWort: 'z.B. Sitemap',
+  eigeneIdee: 'EIGENE IDEE',
+  platzhalterIdee: 'z.B. Sitemap Pioneer',
+  dazu: '+ DAZU',
+  merken: '★ MERKEN',
+  entfernen: '★ ENTFERNEN',
+  listeKopieren: 'LISTE KOPIEREN',
+  titelMerken: 'Den Namen auf die Merkliste setzen oder wieder herunternehmen (Taste F)',
+  titelEntfernen: 'Den Namen von der Merkliste nehmen (Taste F)',
+  titelListeKopieren: 'Alle gemerkten Namen untereinander in die Zwischenablage legen',
+  titelMerkliste: 'Deine gemerkten Namen - der Mutationsregler wirkt weiter (Taste V)',
+  titelEigenesWort: 'Dein eigenes Wort mit Zusätzen kombinieren (Taste I)',
+  titelEigeneIdee: 'Einen eigenen Namen direkt auf die Merkliste setzen (Taste +)',
+  leerMerkliste: 'NOCH NICHTS GEMERKT. F MERKT DEN AKTIVEN NAMEN.',
+  leerWort: 'OBEN EIN WORT EINTIPPEN.',
+  meldungGemerkt: (name) => `GEMERKT: ${name}`,
+  meldungEntfernt: (name) => `ENTFERNT: ${name}`,
+  meldungSchonDa: 'STEHT SCHON AUF DER MERKLISTE',
+  meldungSpeicherGesperrt: 'SPEICHER GESPERRT - MERKLISTE GILT NUR BIS ZUM SCHLIESSEN',
+  meldungKeineRunde: 'DIE MERKLISTE HAT KEINE RUNDEN',
+  wortListe: 'LISTE',
   laufschrift: [
     'CODENAME GENERATOR',
     'ALLES LÄUFT IM BROWSER, NICHTS WIRD GESENDET',
+    'F MERKT EINEN NAMEN, I NIMMT DEIN EIGENES WORT - DIE MERKLISTE BLEIBT IN DEINEM BROWSER',
     'IM DEUTSCHEN WIRD DER ZUSATZ GEBEUGT: STILLER FALKE - STILLE EULE - STILLES WIESEL',
     'DIESELBEN WORTLISTEN TREIBEN DIE TERMINALFASSUNG AN: GITHUB.COM/MICHAELBLAESS/CODENAME-GENERATOR',
     'NAMEN KÖNNEN MIT BESTEHENDEN PRODUKTNAMEN ZUSAMMENFALLEN - VOR VERWENDUNG PRÜFEN',
@@ -149,9 +198,34 @@ const en: UiTexte = {
   quellcode: 'SOURCE',
   andereSpracheName: 'DEUTSCH',
   zurueck: 'BACK TO THE GENERATOR',
+  merkliste: 'SHORTLIST',
+  eigenesWort: 'YOUR OWN WORD',
+  deinWort: 'YOUR WORD',
+  platzhalterWort: 'e.g. Sitemap',
+  eigeneIdee: 'YOUR OWN IDEA',
+  platzhalterIdee: 'e.g. Sitemap Pioneer',
+  dazu: '+ ADD',
+  merken: '★ KEEP',
+  entfernen: '★ REMOVE',
+  listeKopieren: 'COPY LIST',
+  titelMerken: 'Put the name on the shortlist or take it off again (key F)',
+  titelEntfernen: 'Take the name off the shortlist (key F)',
+  titelListeKopieren: 'Copy all kept names to the clipboard, one per line',
+  titelMerkliste: 'Your kept names - the mutation slider still applies (key V)',
+  titelEigenesWort: 'Combine your own word with modifiers (key I)',
+  titelEigeneIdee: 'Put a name of your own straight on the shortlist (key +)',
+  leerMerkliste: 'NOTHING KEPT YET. F KEEPS THE ACTIVE NAME.',
+  leerWort: 'TYPE A WORD ABOVE.',
+  meldungGemerkt: (name) => `KEPT: ${name}`,
+  meldungEntfernt: (name) => `REMOVED: ${name}`,
+  meldungSchonDa: 'ALREADY ON THE SHORTLIST',
+  meldungSpeicherGesperrt: 'STORAGE BLOCKED - SHORTLIST LASTS UNTIL YOU CLOSE THE TAB',
+  meldungKeineRunde: 'THE SHORTLIST HAS NO ROUNDS',
+  wortListe: 'LIST',
   laufschrift: [
     'CODENAME GENERATOR',
     'EVERYTHING RUNS IN YOUR BROWSER, NOTHING IS SENT ANYWHERE',
+    'F KEEPS A NAME, I TAKES YOUR OWN WORD - THE SHORTLIST STAYS IN YOUR BROWSER',
     'GERMAN INFLECTS THE MODIFIER: STILLER FALKE - STILLE EULE - STILLES WIESEL',
     'THE SAME WORD LISTS DRIVE THE TERMINAL VERSION: GITHUB.COM/MICHAELBLAESS/CODENAME-GENERATOR',
     'NAMES MAY COLLIDE WITH EXISTING PRODUCT NAMES - CHECK BEFORE YOU USE ONE',

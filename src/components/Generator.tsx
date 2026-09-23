@@ -5,10 +5,13 @@ import {
   LANGUAGES,
   type Suggestion,
   type WordList,
+  renderFavorite,
   suggest,
+  suggestSeeded,
   themeBySlug,
   visibleThemes,
 } from '../lib/generator';
+import { eigeneIdee, ladeMerkliste, speichereMerkliste } from '../lib/merkliste';
 import { randomSeed } from '../lib/rng';
 import { UI, type UiSprache } from '../i18n/ui';
 import Musik from './Musik';
@@ -16,6 +19,10 @@ import Musik from './Musik';
 const LANGUAGE_LABELS: Record<string, string> = { en: 'ENGLISH', de: 'DEUTSCH' };
 const COUNTS = [10, 20, 30, 40];
 const WORDS = [1, 2, 3];
+
+// Was rechts in der Liste steht: ein Thema, das eigene Wort oder die Merkliste.
+// Dieselbe Aufteilung wie in der TUI (Theme-Liste mit Favorites und Custom Seed).
+type Ansicht = 'thema' | 'wort' | 'merkliste';
 
 function readUrlState() {
   if (typeof window === 'undefined') return null;
@@ -27,6 +34,7 @@ function readUrlState() {
     seed: Number.isFinite(seed) && p.get('seed') ? seed >>> 0 : null,
     mutation: p.get('mut') ? Number(p.get('mut')) : null,
     words: p.get('words') ? Number(p.get('words')) : null,
+    word: (p.get('word') ?? '').trim(),
   };
 }
 
@@ -36,12 +44,14 @@ function FTaste({
   onClick,
   children,
   title,
+  disabled,
 }: {
   kuerzel?: string;
   active?: boolean;
   onClick: () => void;
   children: React.ReactNode;
   title?: string;
+  disabled?: boolean;
 }) {
   return (
     <button
@@ -50,6 +60,7 @@ function FTaste({
       aria-pressed={active}
       onClick={onClick}
       title={title}
+      disabled={disabled}
     >
       {kuerzel && <span className="ftaste-kuerzel">{kuerzel} </span>}
       {children}
@@ -86,6 +97,17 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
   const [count, setCount] = useState<number>(20);
   const [seed, setSeed] = useState<number>(() => start?.seed ?? randomSeed());
   const [aktiv, setAktiv] = useState<number>(0);
+  const [ansicht, setAnsicht] = useState<Ansicht>(() => (start?.word ? 'wort' : 'thema'));
+  const [wort, setWort] = useState<string>(() => start?.word ?? '');
+  const [idee, setIdee] = useState<string>('');
+  // client:only - die Komponente laeuft nur im Browser, der Speicher ist also
+  // schon beim ersten Rendern lesbar.
+  const [merkliste, setMerkliste] = useState<Suggestion[]>(() => ladeMerkliste());
+  const wortFeldRef = useRef<HTMLInputElement>(null);
+  const ideeFeldRef = useRef<HTMLInputElement>(null);
+  // Nach einem Ansichtswechsel per Taste soll das passende Eingabefeld den
+  // Fokus bekommen - erst nach dem Rendern, vorher gibt es das Feld nicht.
+  const fokusNach = useRef<'wort' | 'idee' | null>(null);
   // Die Statuszeile antwortet wie ein Heimcomputer: im Ruhezustand READY.,
   // nach einer Aktion die Rueckmeldung, danach wieder READY.
   const [meldung, setMeldung] = useState<string>('');
@@ -131,21 +153,48 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
     if (!eintrag || !liste) return;
     // Bewusst kein scrollIntoView: das scrollt auch das Fenster und reisst den
     // Titelbildschirm aus dem Blick, sobald ein Thema weiter unten aktiv ist.
-    liste.scrollTop = eintrag.offsetTop - liste.clientHeight / 2 + eintrag.clientHeight / 2;
-  }, [themeSlug, language]);
+    // offsetTop zaehlt ab dem naechsten positionierten Vorfahren, nicht ab der
+    // Liste - deshalb die Lage ueber die Kaesten relativ zur Liste ermitteln.
+    const oben =
+      eintrag.getBoundingClientRect().top - liste.getBoundingClientRect().top + liste.scrollTop;
+    liste.scrollTop = oben - liste.clientHeight / 2 + eintrag.clientHeight / 2;
+  }, [themeSlug, language, ansicht]);
 
   const suggestions: Suggestion[] = useMemo(() => {
+    const mutationChance = mutation / 100;
+    if (ansicht === 'merkliste') return merkliste.map((f) => renderFavorite(f, mutationChance));
+    if (ansicht === 'wort') {
+      return suggestSeeded({ word: wort, count, mutationChance, wordCount, language, seed })
+        .suggestions;
+    }
     if (!theme) return [];
-    return suggest({ themeSlug, count, mutationChance: mutation / 100, wordCount, language, seed })
-      .suggestions;
-  }, [themeSlug, count, mutation, wordCount, language, seed, theme]);
+    return suggest({ themeSlug, count, mutationChance, wordCount, language, seed }).suggestions;
+  }, [ansicht, merkliste, wort, themeSlug, count, mutation, wordCount, language, seed, theme]);
+
+  const gemerkt = useMemo(() => new Set(merkliste.map((f) => f.slug)), [merkliste]);
 
   const held = suggestions[Math.min(aktiv, Math.max(suggestions.length - 1, 0))];
   const heldName = held?.name;
 
   useEffect(() => {
     setAktiv(0);
-  }, [seed, themeSlug, language, wordCount, mutation, count]);
+  }, [seed, themeSlug, language, wordCount, mutation, count, ansicht, wort]);
+
+  useEffect(() => {
+    const ziel = fokusNach.current;
+    fokusNach.current = null;
+    if (ziel === 'wort') wortFeldRef.current?.focus();
+    if (ziel === 'idee') ideeFeldRef.current?.focus();
+  }, [ansicht]);
+
+  const oeffne = useCallback((neu: Ansicht, fokus: 'wort' | 'idee' | null = null) => {
+    fokusNach.current = fokus;
+    setAnsicht(neu);
+    // Steht die Ansicht schon, loest setAnsicht keinen Effekt aus - dann
+    // direkt fokussieren.
+    if (fokus === 'wort') wortFeldRef.current?.focus();
+    if (fokus === 'idee') ideeFeldRef.current?.focus();
+  }, []);
 
   // Der Name laeuft Zeichen fuer Zeichen ein. Das Ziel ist reiner Text,
   // deshalb darf retro-text-effects hier arbeiten, ohne Bedienelemente zu
@@ -183,6 +232,11 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
     [t],
   );
 
+  const melde = useCallback((text: string, dauer = 2800) => {
+    setMeldung(text);
+    window.setTimeout(() => setMeldung(''), dauer);
+  }, []);
+
   const adresseKopieren = useCallback(() => {
     const p = new URLSearchParams({
       theme: themeSlug,
@@ -191,8 +245,66 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
       mut: String(mutation),
       words: String(wordCount),
     });
+    if (ansicht === 'wort' && wort.trim()) p.set('word', wort.trim());
     void kopieren(`${window.location.origin}${window.location.pathname}?${p}`, t.wortAdresse);
-  }, [themeSlug, language, seed, mutation, wordCount, kopieren]);
+  }, [themeSlug, language, seed, mutation, wordCount, ansicht, wort, kopieren]);
+
+  const listeKopieren = useCallback(() => {
+    if (suggestions.length === 0) return;
+    void kopieren(suggestions.map((s) => s.name).join('\n'), t.wortListe);
+  }, [suggestions, kopieren, t]);
+
+  /** Neue Merkliste uebernehmen und speichern. Ist der Speicher gesperrt, gilt sie nur fuer diesen Besuch. */
+  const aendereMerkliste = useCallback(
+    (neu: Suggestion[], text: string) => {
+      setMerkliste(neu);
+      melde(speichereMerkliste(neu) ? text : t.meldungSpeicherGesperrt);
+    },
+    [melde, t],
+  );
+
+  const merken = useCallback(() => {
+    if (ansicht === 'merkliste') {
+      // In der Merkliste steht der Name ggf. mutiert da - entfernt wird nach Position.
+      if (merkliste.length === 0) return;
+      const index = Math.min(aktiv, merkliste.length - 1);
+      const name = suggestions[index]?.name ?? merkliste[index].name;
+      aendereMerkliste(
+        merkliste.filter((_, i) => i !== index),
+        t.meldungEntfernt(name),
+      );
+      return;
+    }
+    if (!held) return;
+    if (gemerkt.has(held.slug)) {
+      aendereMerkliste(
+        merkliste.filter((f) => f.slug !== held.slug),
+        t.meldungEntfernt(held.name),
+      );
+    } else {
+      aendereMerkliste([...merkliste, held], t.meldungGemerkt(held.name));
+    }
+  }, [ansicht, merkliste, aktiv, suggestions, held, gemerkt, aendereMerkliste, t]);
+
+  const ideeHinzu = useCallback(() => {
+    const neu = eigeneIdee(idee);
+    if (!neu) return;
+    if (gemerkt.has(neu.slug)) {
+      melde(t.meldungSchonDa);
+      return;
+    }
+    aendereMerkliste([...merkliste, neu], t.meldungGemerkt(neu.name));
+    setIdee('');
+  }, [idee, gemerkt, merkliste, aendereMerkliste, melde, t]);
+
+  const neueRunde = useCallback(() => {
+    if (ansicht === 'merkliste') {
+      melde(t.meldungKeineRunde);
+      return;
+    }
+    setSeed(randomSeed());
+    melde(t.meldungNeueRunde, 900);
+  }, [ansicht, melde, t]);
 
   const blaettern = useCallback(
     (schritt: number) => {
@@ -206,10 +318,20 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
 
   useEffect(() => {
     const aufTaste = (e: KeyboardEvent) => {
+      // Nur Texteingaben schlucken die Tasten. Ein Schieberegler behaelt nach
+      // dem Ziehen den Fokus - F und die F-Tasten muessen trotzdem wirken.
       const ziel = e.target as HTMLElement | null;
-      if (ziel && ['INPUT', 'TEXTAREA', 'SELECT'].includes(ziel.tagName)) return;
+      const texteingabe =
+        ziel instanceof HTMLInputElement
+          ? !['range', 'checkbox', 'radio', 'button'].includes(ziel.type)
+          : Boolean(ziel && ['TEXTAREA', 'SELECT'].includes(ziel.tagName));
+      if (texteingabe) return;
+      // Pfeiltasten gehoeren dem Regler selbst, sonst ist er per Tastatur tot.
+      if (ziel instanceof HTMLInputElement && ziel.type === 'range' && e.key.startsWith('Arrow')) {
+        return;
+      }
       const tasten: Record<string, () => void> = {
-        F1: () => setSeed(randomSeed()),
+        F1: neueRunde,
         F3: () =>
           setLanguage((l) => LANGUAGES[(LANGUAGES.indexOf(l) + 1) % LANGUAGES.length] ?? l),
         F5: () => setWordCount((w) => (w % 3) + 1),
@@ -218,7 +340,16 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
         ArrowLeft: () => blaettern(-1),
         ArrowDown: () => blaettern(1),
         ArrowUp: () => blaettern(-1),
+        // Dieselben Buchstaben wie in der TUI.
+        f: merken,
+        F: merken,
+        i: () => oeffne('wort', 'wort'),
+        I: () => oeffne('wort', 'wort'),
+        v: () => oeffne('merkliste'),
+        V: () => oeffne('merkliste'),
+        '+': () => oeffne('merkliste', 'idee'),
       };
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
       const aktion = tasten[e.key];
       if (!aktion) return;
       e.preventDefault();
@@ -226,7 +357,14 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
     };
     window.addEventListener('keydown', aufTaste);
     return () => window.removeEventListener('keydown', aufTaste);
-  }, [blaettern, held, kopieren]);
+  }, [blaettern, held, kopieren, merken, neueRunde, oeffne, t]);
+
+  const kopfzeile =
+    ansicht === 'merkliste'
+      ? t.merkliste
+      : ansicht === 'wort'
+        ? `${t.eigenesWort}: ${wort.trim() || '-'}`
+        : (theme?.name ?? '');
 
   return (
     <>
@@ -242,7 +380,7 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
       {/* --- Der Name, gross und in Gold --- */}
       <section className="border-y-2 border-gold-tief bg-black/40 px-4 py-3 text-center">
         <p className="pixel mb-2 text-[0.5rem] text-magenta">
-          {theme?.name.toUpperCase()} · {language.toUpperCase()} · MUT {mutation}% ·{' '}
+          {kopfzeile.toUpperCase()} · {language.toUpperCase()} · MUT {mutation}% ·{' '}
           {String(aktiv + 1).padStart(2, '0')}/{String(suggestions.length).padStart(2, '0')}
         </p>
         <p ref={heldRef} className="gold held">
@@ -271,11 +409,60 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
         <div className="flex min-h-0 flex-col lg:order-2">
           <div className="mb-1 flex items-baseline justify-between">
             <h2 className="pixel text-[0.5rem] text-gold">{t.top(suggestions.length)}</h2>
-            <span className="pixel text-[0.5rem] text-magenta">
-              {t.runde(String(seed % 10000).padStart(4, '0'))}
-            </span>
+            {ansicht !== 'merkliste' && (
+              <span className="pixel text-[0.5rem] text-magenta">
+                {t.runde(String(seed % 10000).padStart(4, '0'))}
+              </span>
+            )}
           </div>
+          {ansicht === 'wort' && (
+            <label className="eingabe mb-2">
+              <span className="pixel text-[0.5rem] text-gold">{t.deinWort}</span>
+              <input
+                ref={wortFeldRef}
+                type="text"
+                value={wort}
+                maxLength={40}
+                placeholder={t.platzhalterWort}
+                onChange={(e) => setWort(e.target.value)}
+                onKeyDown={(e) => e.key === 'Escape' && e.currentTarget.blur()}
+                spellCheck={false}
+                autoComplete="off"
+              />
+            </label>
+          )}
+          {ansicht === 'merkliste' && (
+            <div className="eingabe mb-2">
+              <label htmlFor="eigene-idee" className="pixel text-[0.5rem] text-gold">
+                {t.eigeneIdee}
+              </label>
+              <input
+                id="eigene-idee"
+                ref={ideeFeldRef}
+                type="text"
+                value={idee}
+                maxLength={60}
+                placeholder={t.platzhalterIdee}
+                onChange={(e) => setIdee(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') ideeHinzu();
+                  if (e.key === 'Escape') e.currentTarget.blur();
+                }}
+                spellCheck={false}
+                autoComplete="off"
+                title={t.titelEigeneIdee}
+              />
+              <FTaste onClick={ideeHinzu} title={t.titelEigeneIdee}>
+                {t.dazu}
+              </FTaste>
+            </div>
+          )}
           <ol className="kanal panel min-h-0 flex-1 overflow-y-auto">
+            {suggestions.length === 0 && (
+              <li className="px-2 py-1 text-dunst">
+                {ansicht === 'merkliste' ? t.leerMerkliste : ansicht === 'wort' ? t.leerWort : ''}
+              </li>
+            )}
             {suggestions.map((s, index) => (
               <li key={`${s.slug}-${index}`}>
                 <button
@@ -287,7 +474,10 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
                   <span className="rang-nummer tabular-nums">
                     {String(index + 1).padStart(2, '0')}.
                   </span>
-                  <span className="truncate">{s.name.toUpperCase()}</span>
+                  <span className="truncate">
+                    {ansicht !== 'merkliste' && gemerkt.has(s.slug) ? '★ ' : ''}
+                    {s.name.toUpperCase()}
+                  </span>
                   <span className="rang-marke pixel hidden text-[0.44rem] sm:inline">
                     {s.mutated ? 'MUT' : ''}
                   </span>
@@ -299,12 +489,9 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <FTaste
               kuerzel="F1"
-              onClick={() => {
-                setSeed(randomSeed());
-                setMeldung(t.meldungNeueRunde);
-                window.setTimeout(() => setMeldung(''), 900);
-              }}
+              onClick={neueRunde}
               title={t.titelNeueRunde}
+              disabled={ansicht === 'merkliste'}
             >
               {t.neueRunde}
             </FTaste>
@@ -315,13 +502,23 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
             >
               {t.nameKopieren}
             </FTaste>
-            <Musik sprache={sprache} />
             <FTaste
-              onClick={adresseKopieren}
-              title={t.titelAdresseKopieren}
+              onClick={merken}
+              title={ansicht === 'merkliste' ? t.titelEntfernen : t.titelMerken}
+              active={ansicht !== 'merkliste' && Boolean(held && gemerkt.has(held.slug))}
             >
-              {t.adresseKopieren}
+              {ansicht === 'merkliste' ? t.entfernen : t.merken}
             </FTaste>
+            <Musik sprache={sprache} />
+            {ansicht === 'merkliste' ? (
+              <FTaste onClick={listeKopieren} title={t.titelListeKopieren}>
+                {t.listeKopieren}
+              </FTaste>
+            ) : (
+              <FTaste onClick={adresseKopieren} title={t.titelAdresseKopieren}>
+                {t.adresseKopieren}
+              </FTaste>
+            )}
           </div>
         </div>
 
@@ -333,22 +530,53 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
           <section className="flex min-h-0 flex-1 flex-col">
             <h2 className="pixel mb-1 text-[0.5rem] text-gold">{t.thema}</h2>
             <ul className="kanal panel min-h-0 flex-1 overflow-y-auto">
-              {available.map((t) => (
-                <li key={t.slug}>
+              <li>
+                <button
+                  type="button"
+                  ref={ansicht === 'merkliste' ? aktivesThemaRef : undefined}
+                  onClick={() => oeffne('merkliste')}
+                  title={t.titelMerkliste}
+                  aria-current={ansicht === 'merkliste'}
+                  className={`thema-eintrag ${ansicht === 'merkliste' ? 'bg-gold text-schwarz' : 'text-gold-hell hover:bg-lila'}`}
+                >
+                  <span className="truncate">★ {t.merkliste}</span>
+                  <span className="text-[0.62rem] tabular-nums opacity-60">{merkliste.length}</span>
+                </button>
+              </li>
+              <li className="border-b border-lila pb-[0.1rem]">
+                <button
+                  type="button"
+                  ref={ansicht === 'wort' ? aktivesThemaRef : undefined}
+                  onClick={() => oeffne('wort', 'wort')}
+                  title={t.titelEigenesWort}
+                  aria-current={ansicht === 'wort'}
+                  className={`thema-eintrag ${ansicht === 'wort' ? 'bg-gold text-schwarz' : 'text-gold-hell hover:bg-lila'}`}
+                >
+                  <span className="truncate">
+                    {t.eigenesWort}
+                    {wort.trim() ? `: ${wort.trim()}` : ''}
+                  </span>
+                </button>
+              </li>
+              {available.map((th) => (
+                <li key={th.slug}>
                   <button
                     type="button"
-                    ref={t.slug === themeSlug ? aktivesThemaRef : undefined}
-                    onClick={() => setThemeSlug(t.slug)}
-                    title={t.description}
-                    aria-current={t.slug === themeSlug}
-                    className={`flex w-full items-baseline justify-between gap-2 px-2 py-[0.1rem] text-left ${
-                      t.slug === themeSlug
+                    ref={ansicht === 'thema' && th.slug === themeSlug ? aktivesThemaRef : undefined}
+                    onClick={() => {
+                      setAnsicht('thema');
+                      setThemeSlug(th.slug);
+                    }}
+                    title={th.description}
+                    aria-current={ansicht === 'thema' && th.slug === themeSlug}
+                    className={`thema-eintrag ${
+                      ansicht === 'thema' && th.slug === themeSlug
                         ? 'bg-gold text-schwarz'
                         : 'text-creme hover:bg-lila'
                     }`}
                   >
-                    <span className="truncate">{t.name}</span>
-                    <span className="text-[0.62rem] tabular-nums opacity-60">{t.words.length}</span>
+                    <span className="truncate">{th.name}</span>
+                    <span className="text-[0.62rem] tabular-nums opacity-60">{th.words.length}</span>
                   </button>
                 </li>
               ))}
@@ -375,11 +603,13 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
                   active={n === wordCount}
                   onClick={() => setWordCount(n)}
                   title={theme?.patterns.length ? t.titelWortzahlFest : undefined}
+                  disabled={ansicht === 'merkliste'}
                 >
                   {n}
                 </FTaste>
               ))}
-              {Boolean(theme?.patterns.length) && (
+              {(ansicht === 'merkliste' ||
+                (ansicht === 'thema' && Boolean(theme?.patterns.length))) && (
                 <span className="text-[0.62rem] text-magenta">{t.fest}</span>
               )}
             </div>
@@ -389,7 +619,12 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
             <h2 className="pixel mb-1 text-[0.5rem] text-gold">{t.zeilen}</h2>
             <div className="flex flex-wrap gap-1">
               {COUNTS.map((n) => (
-                <FTaste key={n} active={n === count} onClick={() => setCount(n)}>
+                <FTaste
+                  key={n}
+                  active={n === count}
+                  onClick={() => setCount(n)}
+                  disabled={ansicht === 'merkliste'}
+                >
                   {n}
                 </FTaste>
               ))}

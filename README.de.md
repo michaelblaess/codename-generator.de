@@ -30,14 +30,22 @@ Browser - kein Backend, kein Tracking, nichts verlässt die Seite.
   funktionieren in beiden Sprachen.
 - **Phonetische Mutation** schiebt ein Wort aus dem Wörterbuch heraus:
   `Pegasus -> Pegasos`. Ein `*` markiert einen mutierten Vorschlag.
+- **Eigenes Wort** (Taste `i`): Dein Wort wird mit den Zusätzen der gewählten Sprache
+  kombiniert, aus `Sitemap` wird `Obsidian Sitemap` oder `Sitemap Proxy`. Kein Name kommt
+  im Stapel doppelt vor. Die Adresse `?word=Sitemap` öffnet direkt diese Ansicht.
+- **Merkliste** (Taste `f` merkt, `v` zeigt sie): Gemerkte Namen bleiben im Browser, der
+  Mutationsregler wirkt auf sie weiter. Mit `+` setzt du eigene Ideen dazu, `Liste
+  kopieren` legt alle Namen untereinander in die Zwischenablage. Das Speicherformat ist das
+  der Favoriten in der TUI.
 - **Permalinks.** Jeder Stapel hat einen Seed - der Knopf `Link` kopiert eine URL, die
   genau diesen Stapel wieder erzeugt.
 - **Zwei Oberflächensprachen.** Deutsch liegt unter `/`, Englisch unter `/en/`, beide aus
   einem Wörterbuch (`src/i18n/ui.ts`). Die Oberflächensprache ist unabhängig von der
   Sprache der erzeugten Namen, die im Bedienfeld umschaltbar bleibt.
 - **Rechtsseiten**: Impressum nach § 5 DDG und eine Datenschutzerklärung, die beschreibt,
-  was die Seite wirklich tut - keine Cookies, kein Speicher, keine Statistik. Der
-  Smoketest misst diese Aussage nach, statt ihr zu glauben.
+  was die Seite wirklich tut - keine Cookies, keine Statistik, localStorage nur für die
+  Merkliste und erst nach dem ersten Merken. Der Smoketest misst diese Aussagen nach,
+  statt ihnen zu glauben.
 - **Retro-Effekte** über [retro-text-effects](https://github.com/michaelblaess/retro-text-effects.js),
   mit Rücksicht auf `prefers-reduced-motion`.
 

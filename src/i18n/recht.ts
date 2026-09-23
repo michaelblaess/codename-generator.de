@@ -2,9 +2,10 @@
  * Impressum und Datenschutzerklaerung.
  *
  * Die Datenschutzerklaerung beschreibt NUR, was die Seite wirklich tut. Stand
- * geprueft am 17.08.2026: kein Backend, keine Cookies, kein localStorage,
- * keine Zaehlpixel, keine externen Schriften oder Skripte - die Schriften
- * liegen als woff2 im Bundle. Kommt spaeter etwas dazu, gehoert es HIER
+ * geprueft am 23.09.2026: kein Backend, keine Cookies, keine Zaehlpixel, keine
+ * externen Schriften oder Skripte - die Schriften liegen als woff2 im Bundle.
+ * localStorage nur fuer die Merkliste, und erst nach dem ersten Merken
+ * (src/lib/merkliste.ts). Der Smoketest misst beides nach. Kommt spaeter etwas dazu, gehoert es HIER
  * hinein, sonst beschreibt der Text eine Seite, die es nicht gibt.
  *
  * Grundlage ist § 5 DDG (nicht mehr TMG, abgeloest im Mai 2024).
@@ -26,8 +27,8 @@ export interface Rechtstext {
 
 const ANSCHRIFT = ['Michael Blaess', 'Kurze Str. 2', '15345 Rehfelde', 'Deutschland'];
 const MAIL = 'mail@michaelblaess.de';
-const STAND_DE = 'Stand: 17.08.2026';
-const STAND_EN = 'Last updated: 17 August 2026';
+const STAND_DE = 'Stand: 23.09.2026';
+const STAND_EN = 'Last updated: 23 September 2026';
 
 export const IMPRESSUM: Record<UiSprache, Rechtstext> = {
   de: {
@@ -156,10 +157,12 @@ export const DATENSCHUTZ: Record<UiSprache, Rechtstext> = {
         ],
       },
       {
-        titel: 'Keine Cookies, kein Speicher, keine Statistik',
+        titel: 'Keine Cookies, keine Statistik - nur deine Merkliste im Browser',
         zeilen: [
-          'Es werden keine Cookies gesetzt, weder technisch notwendige noch andere. Es wird nichts in localStorage oder sessionStorage abgelegt. Deshalb gibt es hier auch keinen Einwilligungsbanner - es gibt nichts einzuwilligen.',
-          'Es findet keine Reichweitenmessung statt: kein Google Analytics, kein Matomo, kein Zählpixel.',
+          'Es werden keine Cookies gesetzt, weder technisch notwendige noch andere. Es findet keine Reichweitenmessung statt: kein Google Analytics, kein Matomo, kein Zählpixel.',
+          'Wenn du einen Namen merkst oder eine eigene Idee auf die Merkliste setzt, legt die Seite diese Liste im localStorage deines Browsers ab, unter dem Schlüssel codename-generator.merkliste. Gespeichert werden nur die gemerkten Namen und ihre Bestandteile. Die Liste bleibt in deinem Browser, sie wird an keinen Server übertragen, und ich kann sie nicht einsehen. Sonst legt die Seite nichts im Browser ab, auch nicht im sessionStorage.',
+          'Vor dem ersten Merken wird nichts gespeichert. Entfernst du den letzten Eintrag, verschwindet auch der Schlüssel wieder. Außerdem kannst du die Liste jederzeit über die Einstellungen deines Browsers löschen (gespeicherte Websitedaten).',
+          'Eine Einwilligung ist dafür nicht nötig: Die Speicherung ist unbedingt erforderlich, damit die von dir ausdrücklich gewünschte Merkliste funktioniert (§ 25 Abs. 2 Nr. 2 TDDDG). Deshalb gibt es hier auch keinen Einwilligungsbanner.',
           'Die eingestellte Sprache und ein geteilter Stapel Namen stehen in der Adresse selbst, nicht in einem Speicher deines Browsers.',
           'Die Hintergrundmusik wird erst nach einem Klick auf den Musikknopf geladen, und zwar von demselben Server wie die Seite. Es wird dabei kein fremder Dienst kontaktiert.',
         ],
@@ -204,10 +207,12 @@ export const DATENSCHUTZ: Record<UiSprache, Rechtstext> = {
         ],
       },
       {
-        titel: 'No cookies, no storage, no analytics',
+        titel: 'No cookies, no analytics - only your shortlist in the browser',
         zeilen: [
-          'No cookies are set, neither strictly necessary ones nor any others. Nothing is written to localStorage or sessionStorage. That is also why there is no consent banner here - there is nothing to consent to.',
-          'There is no audience measurement: no Google Analytics, no Matomo, no tracking pixel.',
+          'No cookies are set, neither strictly necessary ones nor any others. There is no audience measurement: no Google Analytics, no Matomo, no tracking pixel.',
+          'When you keep a name or put an idea of your own on the shortlist, the page stores that list in the localStorage of your browser, under the key codename-generator.merkliste. Only the kept names and their parts are stored. The list stays in your browser, it is not sent to any server, and I cannot see it. Apart from that the page stores nothing in your browser, not in sessionStorage either.',
+          'Nothing is stored before you keep your first name. When you remove the last entry, the key disappears again. You can also delete the list at any time in your browser settings (stored site data).',
+          'No consent is needed for this: the storage is strictly necessary to provide the shortlist you explicitly asked for (Section 25(2) no. 2 of the German Telecommunications Digital Services Data Protection Act, TDDDG). That is also why there is no consent banner here.',
           'The chosen language and a shared batch of names live in the address itself, not in the storage of your browser.',
           'The background music is only fetched after you press the music button, and it comes from the same server as the page. No third-party service is contacted.',
         ],

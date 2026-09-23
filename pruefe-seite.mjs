@@ -252,22 +252,120 @@ for (const groesse of [
 
 await seite.screenshot({ path: 'smoke.png', fullPage: true });
 
-// 9. Die Datenschutzerklaerung behauptet: keine Cookies, kein Speicher. Das
+// 9. Die Datenschutzerklaerung behauptet: keine Cookies, localStorage nur fuer
+//    die Merkliste und erst nach dem ersten Merken, kein sessionStorage. Das
 //    muss messbar sein, sonst steht dort eine unwahre Aussage.
 await seite.setViewportSize({ width: 1400, height: 1000 });
 await seite.goto(URL_BASIS, { waitUntil: 'networkidle' });
 await held.waitFor({ timeout: 10000 });
 await seite.getByRole('button', { name: 'NEUE RUNDE' }).click();
 await seite.waitForTimeout(400);
-const spuren = await seite.evaluate(() => ({
-  cookies: document.cookie,
-  lokal: window.localStorage.length,
-  sitzung: window.sessionStorage.length,
-}));
+const messeSpuren = () =>
+  seite.evaluate(() => ({
+    cookies: document.cookie,
+    schluessel: Object.keys(window.localStorage),
+    sitzung: window.sessionStorage.length,
+  }));
+const spuren = await messeSpuren();
 pruefe(
-  spuren.cookies === '' && spuren.lokal === 0 && spuren.sitzung === 0,
-  `keine Cookies, kein Speicher (cookie "${spuren.cookies}", local ${spuren.lokal}, session ${spuren.sitzung})`,
+  spuren.cookies === '' && spuren.schluessel.length === 0 && spuren.sitzung === 0,
+  `vor dem Merken: keine Cookies, kein Speicher (cookie "${spuren.cookies}", local ${spuren.schluessel}, session ${spuren.sitzung})`,
 );
+
+// 9b. Merkliste: F merkt den aktiven Namen, danach steht genau ein Schluessel
+//     im localStorage, und die Liste ueberlebt das Neuladen.
+// Mutation auf 0, sonst rendert die Merkliste den Namen anders als gemerkt.
+const mutationRegler = seite.locator('input[type="range"]');
+await mutationRegler.fill('0');
+// Der Name laeuft Zeichen fuer Zeichen ein - erst nach dem Druckeffekt lesen.
+await seite.waitForTimeout(1500);
+const gemerkterName = (await held.innerText()).trim();
+await seite.locator('body').press('f');
+await seite.waitForTimeout(300);
+const nachMerken = await messeSpuren();
+pruefe(
+  nachMerken.cookies === '' &&
+    JSON.stringify(nachMerken.schluessel) === '["codename-generator.merkliste"]' &&
+    nachMerken.sitzung === 0,
+  `nach dem Merken: nur der Merklisten-Schluessel (local ${nachMerken.schluessel})`,
+);
+pruefe(
+  (await seite.locator('ol li button[aria-current="true"]').innerText()).includes('★'),
+  'gemerkter Name traegt den Stern in der Liste',
+);
+await seite.reload({ waitUntil: 'networkidle' });
+await held.waitFor({ timeout: 10000 });
+const merklistenEintrag = seite.locator('ul li button').filter({ hasText: 'MERKLISTE' });
+pruefe(
+  (await merklistenEintrag.innerText()).includes('1'),
+  'Merkliste zaehlt nach dem Neuladen einen Eintrag',
+);
+await merklistenEintrag.click();
+await mutationRegler.fill('0');
+await seite.waitForTimeout(1500);
+const merklistenHeld = (await held.innerText()).trim();
+pruefe(
+  (await seite.locator('ol li button').count()) === 1 && merklistenHeld === gemerkterName,
+  `Merkliste zeigt den gemerkten Namen ("${merklistenHeld}" = "${gemerkterName}")`,
+);
+pruefe(
+  await seite.getByRole('button', { name: 'NEUE RUNDE' }).isDisabled(),
+  'in der Merkliste ist NEUE RUNDE gesperrt',
+);
+
+// 9c. Eigene Idee per "+" und Eingabe, danach alles wieder entfernen: der
+//     Schluessel muss mit dem letzten Eintrag verschwinden.
+await seite.locator('body').press('+');
+await seite.keyboard.type('Sitemap Pioneer');
+await seite.keyboard.press('Enter');
+await seite.waitForTimeout(300);
+const listeMitIdee = await seite.locator('ol li button').allInnerTexts();
+pruefe(
+  listeMitIdee.length === 2 && listeMitIdee.some((z) => z.includes('SITEMAP PIONEER')),
+  `eigene Idee steht auf der Merkliste (${listeMitIdee.length} Eintraege)`,
+);
+await seite.locator('#eigene-idee').blur();
+await seite.locator('body').press('f');
+await seite.locator('body').press('f');
+await seite.waitForTimeout(300);
+const nachLeeren = await messeSpuren();
+pruefe(
+  nachLeeren.schluessel.length === 0,
+  `leere Merkliste raeumt den Speicher ab (local ${nachLeeren.schluessel})`,
+);
+
+// 9d. Eigenes Wort: "i" oeffnet das Feld, jeder Vorschlag traegt das Wort, und
+//     ohne Dubletten. Die Adresse ?word= fuehrt direkt in diese Ansicht.
+await seite.locator('body').press('i');
+await seite.keyboard.type('Sitemap');
+await seite.waitForTimeout(400);
+const wortZeilen = await seite.locator('ol li button').allInnerTexts();
+pruefe(
+  wortZeilen.length === 20 &&
+    wortZeilen.every((z) => z.includes('SITEMAP')) &&
+    new Set(wortZeilen.map((z) => z.replace(/^\s*\d+\.\s*/, ''))).size === 20,
+  `eigenes Wort: 20 verschiedene Vorschlaege mit SITEMAP (${wortZeilen.length})`,
+);
+await seite.goto(`${URL_BASIS}?word=Leuchtturm&lang=de&seed=5&mut=0&words=2`, {
+  waitUntil: 'networkidle',
+});
+await held.waitFor({ timeout: 10000 });
+pruefe(
+  (await held.innerText()).includes('LEUCHTTURM'),
+  `?word= oeffnet das eigene Wort (${(await held.innerText()).trim()})`,
+);
+// Die Themenliste zentriert den aktiven Eintrag. Frueher rechnete sie mit
+// offsetTop (ab dem positionierten Vorfahren, nicht ab der Liste) und schob
+// Merkliste und eigenes Wort oben aus dem Blick. EIGENES WORT ist der zweite
+// Eintrag, zentriert heisst dort: die Liste steht ganz oben. Bei 1400x1000
+// fiel der Fehler nicht auf, deshalb das flachere Fenster.
+await seite.setViewportSize({ width: 1400, height: 860 });
+await seite.reload({ waitUntil: 'networkidle' });
+await held.waitFor({ timeout: 10000 });
+await seite.waitForTimeout(300);
+const themenOben = await seite.locator('aside ul').evaluate((ul) => ul.scrollTop);
+pruefe(themenOben === 0, `Themenliste zeigt Merkliste und eigenes Wort (scrollTop ${themenOben})`);
+await seite.setViewportSize({ width: 1400, height: 1000 });
 
 // 10. Rechtsseiten und Sprachfassungen. Die Pflichtangaben muessen von der
 //     Startseite aus in einem Klick erreichbar sein - Rechtstexte, die man

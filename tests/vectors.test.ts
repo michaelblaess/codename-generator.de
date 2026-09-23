@@ -7,7 +7,15 @@
  */
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { render, slugify, titleCase, type Recipe, type WordList } from '../src/lib/generator';
+import {
+  render,
+  renderFavorite,
+  slugify,
+  titleCase,
+  type Pattern,
+  type Recipe,
+  type WordList,
+} from '../src/lib/generator';
 import { inflectAttribute } from '../src/lib/grammar';
 import { mutate } from '../src/lib/phonetic';
 import type { RandomSource } from '../src/lib/rng';
@@ -27,6 +35,7 @@ interface Vectors {
   inflect: Array<{ word: string; gender: string; language: string; expected: string }>;
   mutate: Array<{ word: string; script: number[]; intensity?: number; expected: string }>;
   render: RenderCase[];
+  favorite: Array<{ _note: string; pattern: string; sources: string[]; expected: { name: string; slug: string } }>;
 }
 
 const vectors = JSON.parse(
@@ -121,5 +130,14 @@ describe('Vektoren: render', () => {
       sources: suggestion.sourceWords,
     }).toEqual(vector.expected);
     expect(suggestion.mutated).toBe(false);
+  });
+});
+
+describe('Vektoren: favorite', () => {
+  it.each(vectors.favorite)('$_note', ({ pattern, sources, expected }) => {
+    const stored = { name: '', slug: 'stored', pattern: pattern as Pattern, mutated: false, sourceWords: sources };
+    const rendered = renderFavorite(stored, 0);
+    expect({ name: rendered.name, slug: rendered.slug }).toEqual(expected);
+    expect(rendered.mutated).toBe(false);
   });
 });
