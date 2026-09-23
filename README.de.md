@@ -36,6 +36,10 @@ Browser - kein Backend, kein Tracking, nichts verlässt die Seite.
   eines Themas kombinieren (`Sitemap Selene`, `Pollux Sitemap`), und `VORN`/`HINTEN`
   legen fest, wo es steht. Die Adresse `?word=Sitemap&partner=greek-gods&pos=front`
   öffnet direkt diese Ansicht.
+- **Variieren** (Tasten `w` und `k`): `w` hält das Wort des großen Namens und würfelt neue
+  Zusätze, `k` hält den Zusatz und wechselt das Wort - aus `Witternder Bär` werden
+  `Witternde Feuerwanze` und `Witterndes Damwild`, richtig gebeugt. Aus einer Variante
+  heraus geht es weiter, `F1` würfelt neue Varianten, ein Thema in der Liste führt zurück.
 - **Merkliste** (Taste `f` merkt, `v` zeigt sie): Gemerkte Namen bleiben im Browser, der
   Mutationsregler wirkt auf sie weiter. Mit `+` setzt du eigene Ideen dazu, `Liste
   kopieren` legt alle Namen untereinander in die Zwischenablage. Das Speicherformat ist das

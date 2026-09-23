@@ -5,11 +5,15 @@ import {
   type AnchorPosition,
   DEFAULT_LANGUAGE,
   LANGUAGES,
+  type Recipe,
+  type Stapel,
   type Suggestion,
+  type VariantKeep,
   type WordList,
   renderFavorite,
   suggest,
   suggestSeeded,
+  suggestVariants,
   themeBySlug,
   visibleThemes,
 } from '../lib/generator';
@@ -24,7 +28,17 @@ const WORDS = [1, 2, 3];
 
 // Was rechts in der Liste steht: ein Thema, das eigene Wort oder die Merkliste.
 // Dieselbe Aufteilung wie in der TUI (Theme-Liste mit Favorites und Custom Seed).
-type Ansicht = 'thema' | 'wort' | 'merkliste';
+type Ansicht = 'thema' | 'wort' | 'merkliste' | 'variante';
+
+// Ausgangspunkt der Variantenansicht: ein Treffer, bei dem Wort oder Zusatz bleibt.
+interface Variante {
+  base: Recipe;
+  theme: WordList;
+  keep: VariantKeep;
+  name: string;
+  // Wohin es zurueckgeht, wenn die Variante nicht mehr passt (Sprachwechsel).
+  von: 'thema' | 'wort';
+}
 
 function readUrlState() {
   if (typeof window === 'undefined') return null;
@@ -102,6 +116,7 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
   const [seed, setSeed] = useState<number>(() => start?.seed ?? randomSeed());
   const [aktiv, setAktiv] = useState<number>(0);
   const [ansicht, setAnsicht] = useState<Ansicht>(() => (start?.word ? 'wort' : 'thema'));
+  const [variante, setVariante] = useState<Variante | null>(null);
   const [wort, setWort] = useState<string>(() => start?.word ?? '');
   // Partner des eigenen Worts: leer = Zusaetze, sonst ein Themen-Slug.
   const [partner, setPartner] = useState<string>(() =>
@@ -173,9 +188,21 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
     liste.scrollTop = oben - liste.clientHeight / 2 + eintrag.clientHeight / 2;
   }, [themeSlug, language, ansicht]);
 
-  const suggestions: Suggestion[] = useMemo(() => {
+  // Der Stapel traegt neben den Namen auch Rezepte und Thema - daraus
+  // entstehen die Varianten eines Treffers.
+  const stapel: Stapel = useMemo(() => {
     const mutationChance = mutation / 100;
-    if (ansicht === 'merkliste') return merkliste.map((f) => renderFavorite(f, mutationChance));
+    if (ansicht === 'merkliste') {
+      return {
+        suggestions: merkliste.map((f) => renderFavorite(f, mutationChance)),
+        seed,
+        recipes: [],
+        theme: null,
+      };
+    }
+    if (ansicht === 'variante' && variante) {
+      return suggestVariants({ ...variante, count, mutationChance, wordCount, language, seed });
+    }
     if (ansicht === 'wort') {
       return suggestSeeded({
         word: wort,
@@ -186,12 +213,13 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
         wordCount,
         language,
         seed,
-      }).suggestions;
+      });
     }
-    if (!theme) return [];
-    return suggest({ themeSlug, count, mutationChance, wordCount, language, seed }).suggestions;
+    if (!theme) return { suggestions: [], seed, recipes: [], theme: null };
+    return suggest({ themeSlug, count, mutationChance, wordCount, language, seed });
   }, [
     ansicht,
+    variante,
     merkliste,
     wort,
     partner,
@@ -204,6 +232,16 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
     seed,
     theme,
   ]);
+  const suggestions: Suggestion[] = stapel.suggestions;
+
+  // Varianten haengen an einem Treffer der alten Namenssprache - beim
+  // Sprachwechsel geht es zurueck in die Ansicht, aus der sie kamen.
+  const spracheBeimVariieren = useRef(language);
+  useEffect(() => {
+    if (ansicht === 'variante' && variante && spracheBeimVariieren.current !== language) {
+      setAnsicht(variante.von);
+    }
+  }, [language, ansicht, variante]);
 
   // Das Partner-Thema muss in der Namenssprache sichtbar sein, sonst zurueck
   // auf die Zusaetze - dieselbe Regel wie in der TUI.
@@ -215,7 +253,8 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
   const wortzahlFest =
     ansicht === 'merkliste' ||
     (ansicht === 'thema' && Boolean(theme?.patterns.length)) ||
-    (ansicht === 'wort' && (Boolean(partner) || position !== 'any'));
+    (ansicht === 'wort' && (Boolean(partner) || position !== 'any')) ||
+    (ansicht === 'variante' && Boolean(variante?.theme.patterns.length));
 
   const gemerkt = useMemo(() => new Set(merkliste.map((f) => f.slug)), [merkliste]);
 
@@ -224,7 +263,7 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
 
   useEffect(() => {
     setAktiv(0);
-  }, [seed, themeSlug, language, wordCount, mutation, count, ansicht, wort]);
+  }, [seed, themeSlug, language, wordCount, mutation, count, ansicht, wort, variante]);
 
   useEffect(() => {
     const ziel = fokusNach.current;
@@ -347,6 +386,37 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
     setIdee('');
   }, [idee, gemerkt, merkliste, aendereMerkliste, melde, t]);
 
+  /** Varianten des aktiven Treffers: Wort oder Zusatz bleibt stehen, der Rest wechselt. */
+  const variieren = useCallback(
+    (keep: VariantKeep) => {
+      if (ansicht === 'merkliste') {
+        melde(t.meldungMerklisteNichtVariierbar);
+        return;
+      }
+      const index = Math.min(aktiv, stapel.recipes.length - 1);
+      const base = stapel.recipes[index];
+      const thema = stapel.theme;
+      const name = stapel.suggestions[index]?.name;
+      if (!base || !thema || !name) return;
+      const probe = suggestVariants({ base, theme: thema, keep, count: 1, language });
+      if (probe.recipes.length === 0) {
+        melde(t.meldungNichtsZuVariieren);
+        return;
+      }
+      spracheBeimVariieren.current = language;
+      setVariante({
+        base,
+        theme: thema,
+        keep,
+        name,
+        von: ansicht === 'variante' && variante ? variante.von : ansicht === 'wort' ? 'wort' : 'thema',
+      });
+      setAnsicht('variante');
+      setSeed(randomSeed());
+    },
+    [ansicht, aktiv, stapel, language, variante, melde, t],
+  );
+
   const neueRunde = useCallback(() => {
     if (ansicht === 'merkliste') {
       melde(t.meldungKeineRunde);
@@ -398,6 +468,10 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
         v: () => oeffne('merkliste'),
         V: () => oeffne('merkliste'),
         '+': () => oeffne('merkliste', 'idee'),
+        w: () => variieren('word'),
+        W: () => variieren('word'),
+        k: () => variieren('modifier'),
+        K: () => variieren('modifier'),
       };
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       const aktion = tasten[e.key];
@@ -407,14 +481,16 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
     };
     window.addEventListener('keydown', aufTaste);
     return () => window.removeEventListener('keydown', aufTaste);
-  }, [blaettern, held, kopieren, merken, neueRunde, oeffne, t]);
+  }, [blaettern, held, kopieren, merken, neueRunde, oeffne, variieren, t]);
 
   const kopfzeile =
     ansicht === 'merkliste'
       ? t.merkliste
-      : ansicht === 'wort'
-        ? `${t.eigenesWort}: ${wort.trim() || '-'}`
-        : (theme?.name ?? '');
+      : ansicht === 'variante' && variante
+        ? `${t.varianten} ${variante.name}`
+        : ansicht === 'wort'
+          ? `${t.eigenesWort}: ${wort.trim() || '-'}`
+          : (theme?.name ?? '');
 
   return (
     <>
@@ -449,6 +525,16 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
             {held?.slug}
           </button>
           {held?.mutated && <span className="pixel text-[0.5rem] text-magenta">{t.mutiert}</span>}
+          {ansicht !== 'merkliste' && held && (
+            <>
+              <FTaste kuerzel="W" onClick={() => variieren('word')} title={t.titelWortHalten}>
+                {t.wortHalten}
+              </FTaste>
+              <FTaste kuerzel="K" onClick={() => variieren('modifier')} title={t.titelZusatzHalten}>
+                {t.zusatzHalten}
+              </FTaste>
+            </>
+          )}
         </p>
       </section>
 
@@ -600,7 +686,11 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
                 {t.listeKopieren}
               </FTaste>
             ) : (
-              <FTaste onClick={adresseKopieren} title={t.titelAdresseKopieren}>
+              <FTaste
+                onClick={adresseKopieren}
+                title={t.titelAdresseKopieren}
+                disabled={ansicht === 'variante'}
+              >
                 {t.adresseKopieren}
               </FTaste>
             )}

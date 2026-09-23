@@ -81,6 +81,13 @@ export interface UiTexte {
   stellungen: Record<'any' | 'front' | 'back', string>;
   titelPartner: string;
   titelStellung: string;
+  varianten: string;
+  wortHalten: string;
+  zusatzHalten: string;
+  titelWortHalten: string;
+  titelZusatzHalten: string;
+  meldungNichtsZuVariieren: string;
+  meldungMerklisteNichtVariierbar: string;
   laufschrift: string[];
 }
 
@@ -156,10 +163,18 @@ const de: UiTexte = {
   stellungen: { any: 'EGAL', front: 'VORN', back: 'HINTEN' },
   titelPartner: 'Womit dein Wort kombiniert wird: Zusätze oder die Wörter eines Themas',
   titelStellung: 'Wo dein Wort im Namen steht - eine feste Stelle heißt: zwei Wörter',
+  varianten: 'VARIANTEN VON',
+  wortHalten: 'WORT HALTEN',
+  zusatzHalten: 'ZUSATZ HALTEN',
+  titelWortHalten: 'Das Wort dieses Namens behalten und neue Zusätze würfeln (Taste W)',
+  titelZusatzHalten: 'Den Zusatz dieses Namens behalten und das Wort wechseln (Taste K)',
+  meldungNichtsZuVariieren: 'HIER GIBT ES NICHTS ZU VARIIEREN',
+  meldungMerklisteNichtVariierbar: 'MERKLISTE NICHT VARIIERBAR - ERST EIN THEMA WÄHLEN',
   laufschrift: [
     'CODENAME GENERATOR',
     'ALLES LÄUFT IM BROWSER, NICHTS WIRD GESENDET',
     'F MERKT EINEN NAMEN, I NIMMT DEIN EIGENES WORT - DIE MERKLISTE BLEIBT IN DEINEM BROWSER',
+    'W HÄLT DAS WORT, K DEN ZUSATZ - SO TASTEST DU DICH AN EINEN NAMEN HERAN',
     'IM DEUTSCHEN WIRD DER ZUSATZ GEBEUGT: STILLER FALKE - STILLE EULE - STILLES WIESEL',
     'DIESELBEN WORTLISTEN TREIBEN DIE TERMINALFASSUNG AN: GITHUB.COM/MICHAELBLAESS/CODENAME-GENERATOR',
     'NAMEN KÖNNEN MIT BESTEHENDEN PRODUKTNAMEN ZUSAMMENFALLEN - VOR VERWENDUNG PRÜFEN',
@@ -240,10 +255,18 @@ const en: UiTexte = {
   stellungen: { any: 'ANY', front: 'FRONT', back: 'BACK' },
   titelPartner: 'What your word is combined with: modifiers or the words of a theme',
   titelStellung: 'Where your word stands in the name - a fixed spot means two words',
+  varianten: 'VARIANTS OF',
+  wortHalten: 'KEEP WORD',
+  zusatzHalten: 'KEEP MODIFIER',
+  titelWortHalten: 'Keep the word of this name and roll new modifiers (key W)',
+  titelZusatzHalten: 'Keep the modifier of this name and swap the word (key K)',
+  meldungNichtsZuVariieren: 'NOTHING TO VARY HERE',
+  meldungMerklisteNichtVariierbar: 'SHORTLIST CANNOT BE VARIED - PICK A THEME FIRST',
   laufschrift: [
     'CODENAME GENERATOR',
     'EVERYTHING RUNS IN YOUR BROWSER, NOTHING IS SENT ANYWHERE',
     'F KEEPS A NAME, I TAKES YOUR OWN WORD - THE SHORTLIST STAYS IN YOUR BROWSER',
+    'W KEEPS THE WORD, K THE MODIFIER - HOME IN ON A NAME STEP BY STEP',
     'GERMAN INFLECTS THE MODIFIER: STILLER FALKE - STILLE EULE - STILLES WIESEL',
     'THE SAME WORD LISTS DRIVE THE TERMINAL VERSION: GITHUB.COM/MICHAELBLAESS/CODENAME-GENERATOR',
     'NAMES MAY COLLIDE WITH EXISTING PRODUCT NAMES - CHECK BEFORE YOU USE ONE',

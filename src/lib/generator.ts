@@ -28,6 +28,9 @@ export type Pattern =
   | 'anchor-theme'
   | 'theme-anchor';
 
+/** Was beim Variieren stehen bleibt: das Themenwort oder die Zusaetze. */
+export type VariantKeep = 'word' | 'modifier';
+
 /** Wo das eigene Wort im Namen steht. */
 export type AnchorPosition = 'any' | 'front' | 'back';
 export const ANCHOR_POSITIONS: AnchorPosition[] = ['any', 'front', 'back'];
@@ -358,7 +361,15 @@ export interface SuggestOptions {
 }
 
 /** Erzeugt einen Stapel Vorschlaege. Gleicher Seed = gleicher Stapel. */
-export function suggest(options: SuggestOptions): { suggestions: Suggestion[]; seed: number } {
+export interface Stapel {
+  suggestions: Suggestion[];
+  seed: number;
+  // Rezepte und Thema zum Stapel - daraus entstehen Varianten eines Treffers.
+  recipes: Recipe[];
+  theme: WordList | null;
+}
+
+export function suggest(options: SuggestOptions): Stapel {
   const {
     themeSlug,
     count = 20,
@@ -376,6 +387,8 @@ export function suggest(options: SuggestOptions): { suggestions: Suggestion[]; s
   return {
     suggestions: recipes.map((r) => render(r, theme, wordCount, mutationChance, language)),
     seed,
+    recipes,
+    theme,
   };
 }
 
@@ -475,13 +488,42 @@ function generateSeededRecipes(
   position: AnchorPosition,
   rng: Rng,
 ): Recipe[] {
-  const adjectives = modifierPool(language, 'adjectives');
-  const verbs = modifierPool(language, 'verbs');
-  const agents = modifierPool(language, 'agents');
-  const patterns = anchorModifierPatterns(language, position);
+  return modifierRecipes(
+    word,
+    count,
+    anchorModifierPatterns(language, position),
+    modifierPool(language, 'adjectives'),
+    modifierPool(language, 'verbs'),
+    modifierPool(language, 'agents'),
+    rng,
+  );
+}
+
+/**
+ * Rezepte mit festem Themenwort und wechselnden Zusaetzen, ohne sichtbare
+ * Dublette. `patterns` ist die Liste, in die patternIndex zeigt. `exclude`
+ * ist der Treffer, von dem aus variiert wird - er kommt nicht noch einmal.
+ * Die Zugfolge ist die alte aus generateSeededRecipes, daran haengen die
+ * Permalinks mit ?word=.
+ */
+function modifierRecipes(
+  word: string,
+  count: number,
+  patterns: Pattern[],
+  adjectives: string[],
+  verbs: string[],
+  agents: string[],
+  rng: Rng,
+  exclude?: Recipe,
+): Recipe[] {
   const recipes: Recipe[] = [];
   const seenTwo = new Set<string>();
   const seenThree = new Set<string>();
+  if (exclude) {
+    const excluded = patterns[exclude.patternIndex % patterns.length];
+    seenTwo.add(visibleModifier(excluded, exclude.adjective, exclude.verb, exclude.agent));
+    seenThree.add(`${exclude.adjective}|${exclude.verb}`.toLowerCase());
+  }
   const maxAttempts = count * 40;
   for (let attempt = 0; attempt < maxAttempts && recipes.length < count; attempt += 1) {
     const adjective = adjectives.length > 0 ? rng.choice(adjectives) : '';
@@ -559,6 +601,96 @@ function generateAnchoredRecipes(
   return recipes;
 }
 
+/**
+ * Varianten eines Treffers. 'word' haelt das Themenwort und wuerfelt neue
+ * Zusaetze aus denselben Pools wie das Thema - das Genus kommt weiter aus dem
+ * Thema. 'modifier' haelt Zusaetze, Pattern und Anker und wechselt das
+ * Themenwort. Der Ausgangstreffer kommt nicht noch einmal vor.
+ */
+export function generateVariantRecipes(
+  base: Recipe,
+  theme: WordList,
+  keep: VariantKeep,
+  count: number,
+  language: string,
+  rng: Rng,
+): Recipe[] {
+  if (keep === 'modifier') return variantThemeWords(base, theme, count, rng);
+  // Bei einem Anker-Treffer wuerden neue Zusaetze den Anker verdraengen.
+  if (base.anchor) return [];
+  const lang = effectiveLanguage(theme, language);
+  const declared = theme.patterns.filter((p): p is Pattern => p in PATTERN_WORD_COUNT);
+  // Ein Thema aus einzelnen Woertern (Power words) hat nichts zu variieren.
+  if (declared.length > 0 && declared.every((p) => PATTERN_WORD_COUNT[p] <= 1)) return [];
+  return modifierRecipes(
+    base.themeWord,
+    count,
+    declared.length > 0 ? declared : twoWordPatterns(lang),
+    theme.adjectives.length > 0 ? theme.adjectives : modifierPool(lang, 'adjectives'),
+    theme.verbs.length > 0 ? theme.verbs : modifierPool(lang, 'verbs'),
+    modifierPool(lang, 'agents'),
+    rng,
+    base,
+  );
+}
+
+function variantThemeWords(base: Recipe, theme: WordList, count: number, rng: Rng): Recipe[] {
+  const gesperrt = [base.themeWord, base.anchor ?? ''].map((w) => w.toLowerCase());
+  const kandidaten = theme.words.filter((w) => !gesperrt.includes(w.toLowerCase()));
+  const recipes: Recipe[] = [];
+  const seen = new Set<string>();
+  const maxAttempts = count * 40;
+  for (let attempt = 0; attempt < maxAttempts && kandidaten.length > 0 && recipes.length < count; attempt += 1) {
+    const themeWord = rng.choice(kandidaten);
+    const key = themeWord.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    recipes.push({
+      themeWord,
+      adjective: base.adjective,
+      verb: base.verb,
+      agent: base.agent,
+      patternIndex: base.patternIndex,
+      mutationRoll: rng.random(),
+      mutationSeed: rng.range(0x7fffffff),
+      anchor: base.anchor,
+    });
+  }
+  return recipes;
+}
+
+export interface VariantOptions {
+  base: Recipe;
+  theme: WordList;
+  keep: VariantKeep;
+  count?: number;
+  mutationChance?: number;
+  wordCount?: number;
+  language?: string;
+  seed?: number;
+}
+
+/** Stapel mit Varianten eines Treffers. Gleicher Seed = gleiche Varianten. */
+export function suggestVariants(options: VariantOptions): Stapel {
+  const {
+    base,
+    theme,
+    keep,
+    count = 20,
+    mutationChance = 0.35,
+    wordCount = 2,
+    language = DEFAULT_LANGUAGE,
+    seed = randomSeed(),
+  } = options;
+  const recipes = generateVariantRecipes(base, theme, keep, count, language, new Rng(seed));
+  return {
+    suggestions: recipes.map((r) => render(r, theme, wordCount, mutationChance, language)),
+    seed,
+    recipes,
+    theme,
+  };
+}
+
 export interface SeededOptions {
   word: string;
   // Partner-Thema (Slug). Ohne Partner kommen Adjektive und Verben dazu.
@@ -572,7 +704,7 @@ export interface SeededOptions {
 }
 
 /** Stapel zu einem eigenen Wort ("Sitemap" -> "Silent Sitemap", "Sitemap Runner"). */
-export function suggestSeeded(options: SeededOptions): { suggestions: Suggestion[]; seed: number } {
+export function suggestSeeded(options: SeededOptions): Stapel {
   const {
     word,
     count = 20,
@@ -584,7 +716,7 @@ export function suggestSeeded(options: SeededOptions): { suggestions: Suggestion
     position = 'any',
   } = options;
   const trimmed = word.trim();
-  if (!trimmed) return { suggestions: [], seed };
+  if (!trimmed) return { suggestions: [], seed, recipes: [], theme: null };
   const partnerTheme = partner ? themeBySlug(partner) : undefined;
   const theme = partnerTheme
     ? anchoredTheme(trimmed, partnerTheme, language, position)
@@ -596,5 +728,7 @@ export function suggestSeeded(options: SeededOptions): { suggestions: Suggestion
   return {
     suggestions: recipes.map((r) => render(r, theme, wordCount, mutationChance, language)),
     seed,
+    recipes,
+    theme,
   };
 }

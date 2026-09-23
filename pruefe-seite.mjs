@@ -406,6 +406,55 @@ pruefe(
     ankerAdresse.includes('pos=back'),
   `Adresse traegt Wort, Partner und Position (${ankerAdresse.split('?')[1]})`,
 );
+// 9f. Variieren: W haelt das Wort, K den Zusatz. Welches Wort das Themenwort
+//     ist, sieht man von aussen nicht - deshalb: ein Wort des Ausgangsnamens
+//     steht in JEDER Variante, und der Ausgangsname selbst kommt nicht vor.
+const woerterVon = (name) => name.replace(/\s+MUT$/, '').split(/\s+/);
+const gemeinsamMit = (ausgang, zeilen) =>
+  woerterVon(ausgang).some((w) => zeilen.every((z) => woerterVon(z).includes(w)));
+await seite.goto(`${URL_BASIS}?theme=animals&lang=en&seed=21&mut=0&words=2`, {
+  waitUntil: 'networkidle',
+});
+await held.waitFor({ timeout: 10000 });
+await seite.waitForTimeout(1500);
+const ausgang = (await held.innerText()).trim();
+await seite.locator('body').press('w');
+await seite.waitForTimeout(400);
+const wortVarianten = (await seite.locator('ol li button').allInnerTexts()).map(ohneNummer);
+pruefe(
+  (await seite.locator('section p').first().innerText()).includes('VARIANTEN VON') &&
+    wortVarianten.length === 20 &&
+    !wortVarianten.includes(ausgang) &&
+    gemeinsamMit(ausgang, wortVarianten),
+  `W haelt ein Wort von "${ausgang}" in allen 20 Varianten (${wortVarianten[0]})`,
+);
+await seite.waitForTimeout(1500);
+const zweiterAusgang = (await held.innerText()).trim();
+await seite.locator('body').press('k');
+await seite.waitForTimeout(400);
+const zusatzVarianten = (await seite.locator('ol li button').allInnerTexts()).map(ohneNummer);
+pruefe(
+  zusatzVarianten.length === 20 &&
+    !zusatzVarianten.includes(zweiterAusgang) &&
+    gemeinsamMit(zweiterAusgang, zusatzVarianten),
+  `K von der Variante aus haelt den Zusatz von "${zweiterAusgang}" (${zusatzVarianten[0]})`,
+);
+pruefe(
+  await seite.getByRole('button', { name: 'ADRESSE KOPIEREN' }).isDisabled(),
+  'in den Varianten ist ADRESSE KOPIEREN gesperrt',
+);
+await seite.locator('ul li button').filter({ hasText: /^Animals/ }).click();
+await seite.waitForTimeout(400);
+pruefe(
+  !(await seite.locator('section p').first().innerText()).includes('VARIANTEN'),
+  'ein Thema in der Liste verlaesst die Varianten',
+);
+await seite.goto(
+  `${URL_BASIS}?word=Sitemap&lang=en&seed=9&mut=0&partner=constellations&pos=back`,
+  { waitUntil: 'networkidle' },
+);
+await held.waitFor({ timeout: 10000 });
+
 await seite.setViewportSize({ width: 1280, height: 700 });
 await seite.getByRole('button', { name: '40', exact: true }).click();
 await seite.waitForTimeout(500);

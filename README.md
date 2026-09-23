@@ -35,6 +35,10 @@ tracking, nothing leaves the page.
   a theme (`Sitemap Selene`, `Pollux Sitemap`), and `FRONT`/`BACK` decide where it
   stands. The address `?word=Sitemap&partner=greek-gods&pos=front` opens this view
   directly.
+- **Varying** (keys `w` and `k`): `w` keeps the word of the big name and rolls new
+  modifiers, `k` keeps the modifier and swaps the word - `Jump Pangolin` becomes
+  `Magenta Pangolin`, then `Magenta Sloth`. From a variant you can go on, `F1` rolls new
+  variants, picking a theme in the list goes back.
 - **Shortlist** (key `f` keeps a name, `v` shows the list): kept names stay in your
   browser, and the mutation slider still applies to them. `+` adds ideas of your own,
   `Copy list` puts all names on the clipboard, one per line. The storage format is the one
