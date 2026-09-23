@@ -190,8 +190,8 @@ describe('Sprachen', () => {
 describe('Daten', () => {
   it('enthaelt die erwarteten Themes und Woerter', () => {
     const list = themes().filter((t) => !t.slug.startsWith('random'));
-    expect(list.length).toBe(23);
-    expect(list.reduce((n, t) => n + t.words.length, 0)).toBe(2655);
+    expect(list.length).toBe(24);
+    expect(list.reduce((n, t) => n + t.words.length, 0)).toBe(2735);
   });
 
   it('deutsche Themes fuehren ein Genus pro Wort', () => {

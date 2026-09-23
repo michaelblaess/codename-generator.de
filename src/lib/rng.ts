@@ -9,7 +9,16 @@
  * mulberry32: kurz, schnell, gute Verteilung fuer diesen Zweck.
  */
 
-export class Rng {
+/**
+ * Was die phonetische Mutation vom Zufall braucht. Die Testvektoren setzen hier
+ * einen geskripteten Zufall ein, der Seite reicht `Rng`.
+ */
+export interface RandomSource {
+  choice<T>(items: readonly T[]): T;
+  sample<T>(items: readonly T[], k: number): T[];
+}
+
+export class Rng implements RandomSource {
   private state: number;
 
   constructor(seed: number) {

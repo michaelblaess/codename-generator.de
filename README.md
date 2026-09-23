@@ -21,9 +21,9 @@ tracking, nothing leaves the page.
 
 ## What it does
 
-- **23 curated themes**, 2655 words: Greek/Egyptian/Norse gods, racehorses, whisky, wines,
+- **24 curated themes**, 2735 words: Greek/Egyptian/Norse gods, racehorses, whisky, wines,
   mountains, landmarks, historic ships, Swatch watch models, animals, flowers, gemstones,
-  mushrooms, dev verbs and more.
+  mushrooms, air traffic control, dev verbs and more.
 - **English and German.** German inflects the modifier after the noun's gender, so you get
   `Stiller Falke`, `Stille Eule`, `Stilles Wiesel` - not a word-by-word translation. Themes
   built from proper names (gods, racehorses, Swatch models) work in both languages.
@@ -52,6 +52,13 @@ npm run dev
 belong in the Python repo first, then get synced here. `npm run daten:pruefen` runs the sync
 and fails as soon as the JSON files differ from the Python state - the guard against
 forgetting to pull them across.
+
+**Shared test vectors.** The core exists twice, in Python and in TypeScript. To keep both
+computing the same, the test cases for everything deterministic (slug, title case,
+inflection, mutation, composing a name) live in `tests/vectors/core.json` in the Python
+repo. `npm run daten` copies the file to `tests/vectors/`, and both pytest and vitest run
+against exactly that file. New methods get their vectors first, then the implementation in
+both languages.
 
 `npm run daten` reads the YAML files from `../codename-generator` and writes
 `src/data/*.json`. The Python repo stays the single source of truth - never edit the JSON

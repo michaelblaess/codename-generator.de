@@ -21,9 +21,9 @@ Browser - kein Backend, kein Tracking, nichts verlässt die Seite.
 
 ## Was die Seite kann
 
-- **23 kuratierte Themen**, 2655 Wörter: griechische/ägyptische/nordische Götter,
+- **24 kuratierte Themen**, 2735 Wörter: griechische/ägyptische/nordische Götter,
   Rennpferde, Whisky, Weine, Berge, Wahrzeichen, historische Schiffe, Swatch-Modelle,
-  Tiere, Blumen, Edelsteine, Pilze, Dev-Verben und mehr.
+  Tiere, Blumen, Edelsteine, Pilze, Flugsicherung, Dev-Verben und mehr.
 - **Englisch und Deutsch.** Deutsch beugt den Modifikator nach dem Genus des Substantivs,
   deshalb steht dort `Stiller Falke`, `Stille Eule`, `Stilles Wiesel` und keine
   Wort-für-Wort-Übersetzung. Themen aus Eigennamen (Götter, Rennpferde, Swatch-Modelle)
@@ -53,6 +53,13 @@ npm run dev
 eine Regeländerung in der Grammatik gehören zuerst ins Python-Repo, danach hier synchronisiert.
 `npm run daten:pruefen` macht den Abgleich und schlägt fehl, sobald die JSON-Dateien vom
 Python-Stand abweichen - der Wächter gegen "vergessen nachzuziehen".
+
+**Gemeinsame Testvektoren.** Der Kern existiert zweimal, in Python und in TypeScript.
+Damit beide gleich rechnen, liegen die Testfälle für alles Deterministische (Slug,
+Großschreibung, Beugung, Mutation, Zusammensetzen eines Namens) in
+`tests/vectors/core.json` im Python-Repo. `npm run daten` kopiert die Datei nach
+`tests/vectors/`, und pytest wie vitest laufen gegen genau diese Datei. Neue Methoden
+bekommen zuerst ihre Vektoren, dann die Umsetzung in beiden Sprachen.
 
 `npm run daten` liest die YAML-Dateien aus `../codename-generator` und schreibt
 `src/data/*.json`. Das Python-Repo bleibt die einzige Quelle - die JSON-Dateien nie von

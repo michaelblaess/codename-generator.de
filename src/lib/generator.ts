@@ -47,7 +47,7 @@ export interface Suggestion {
   sourceWords: string[];
 }
 
-interface Recipe {
+export interface Recipe {
   themeWord: string;
   adjective: string;
   verb: string;
@@ -99,9 +99,16 @@ export function slugify(text: string): string {
   return asciiOnly.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 }
 
-/** Grosse Anfangsbuchstaben wie Pythons str.title(). */
-function titleCase(text: string): string {
-  return text.replace(/[A-Za-zÀ-ÿ]+/g, (w) => w[0].toUpperCase() + w.slice(1).toLowerCase());
+/**
+ * Grosse Anfangsbuchstaben wie Pythons str.title(). Jeder Buchstabe, dem kein
+ * Buchstabe vorausgeht, wird gross - auch jenseits von Latin-1 (Œ, Ł, Griechisch),
+ * sonst weicht ein eigenes Wort wie "œuvre" von der TUI ab.
+ */
+export function titleCase(text: string): string {
+  return text.replace(/\p{L}+/gu, (w) => {
+    const [first, ...rest] = [...w];
+    return first.toUpperCase() + rest.join('').toLowerCase();
+  });
 }
 
 const THEMES = themesData as WordList[];
@@ -232,7 +239,7 @@ function generateRecipes(theme: WordList, count: number, language: string, rng: 
   return recipes;
 }
 
-function render(
+export function render(
   recipe: Recipe,
   theme: WordList,
   wordCount: number,

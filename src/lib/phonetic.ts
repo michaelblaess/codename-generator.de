@@ -4,7 +4,7 @@
  * Die Regeln sind auf englisch-lateinische Wortformen zugeschnitten - deutsche
  * Themes starten deshalb bei 0 Prozent Mutation.
  */
-import type { Rng } from './rng';
+import type { RandomSource } from './rng';
 
 export const VOWELS = 'aeiouy';
 
@@ -30,7 +30,7 @@ const SUFFIX_SWAPS: Array<[string, string[]]> = [
 
 const DOUBLE_CONSONANTS = 'bcdfgklmnprstvz';
 
-function swapRandomVowel(word: string, rng: Rng): string {
+function swapRandomVowel(word: string, rng: RandomSource): string {
   const indices: number[] = [];
   for (let i = 0; i < word.length; i += 1) {
     if (VOWEL_SWAPS[word[i].toLowerCase()]) indices.push(i);
@@ -45,7 +45,7 @@ function swapRandomVowel(word: string, rng: Rng): string {
   return word.slice(0, idx) + replacement + word.slice(idx + 1);
 }
 
-function swapSuffix(word: string, rng: Rng): string {
+function swapSuffix(word: string, rng: RandomSource): string {
   const lower = word.toLowerCase();
   const candidates = SUFFIX_SWAPS.filter(([suffix]) => lower.endsWith(suffix));
   if (candidates.length === 0) return word;
@@ -58,7 +58,7 @@ function swapSuffix(word: string, rng: Rng): string {
   return word.slice(0, word.length - suffix.length) + replacement;
 }
 
-function doubleConsonant(word: string, rng: Rng): string {
+function doubleConsonant(word: string, rng: RandomSource): string {
   const indices: number[] = [];
   for (let i = 1; i < word.length - 1; i += 1) {
     const ch = word[i].toLowerCase();
@@ -77,7 +77,7 @@ function doubleConsonant(word: string, rng: Rng): string {
 }
 
 /** Schneidet die letzte Silbe ab und behaelt einen Vokal am Wortende. */
-function dropLastSyllable(word: string, _rng: Rng): string {
+function dropLastSyllable(word: string, _rng: RandomSource): string {
   if (word.length < 7) return word;
   const vowelPositions: number[] = [];
   for (let i = 0; i < word.length; i += 1) {
@@ -91,7 +91,7 @@ function dropLastSyllable(word: string, _rng: Rng): string {
 const MUTATIONS = [swapRandomVowel, swapSuffix, doubleConsonant, dropLastSyllable];
 
 /** Wendet 1..N zufaellige phonetische Mutationen auf das Wort an. */
-export function mutate(word: string, rng: Rng, intensity = 1): string {
+export function mutate(word: string, rng: RandomSource, intensity = 1): string {
   if (intensity < 1) return word;
   let current = word;
   for (const mutation of rng.sample(MUTATIONS, Math.min(intensity, MUTATIONS.length))) {

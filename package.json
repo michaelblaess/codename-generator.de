@@ -11,7 +11,7 @@
     "test": "vitest run",
     "daten": "node tools/sync-wordlists.mjs",
     "musik": "node tools/hole-musik.mjs",
-    "daten:pruefen": "node tools/sync-wordlists.mjs && git diff --exit-code -- src/data"
+    "daten:pruefen": "node tools/sync-wordlists.mjs && git diff --exit-code -- src/data tests/vectors"
   },
   "dependencies": {
     "@astrojs/react": "^4.2.0",

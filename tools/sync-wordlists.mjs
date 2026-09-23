@@ -3,23 +3,24 @@
  * src/data/. Das YAML im Python-Repo bleibt die einzige Quelle - hier wird
  * nichts von Hand gepflegt.
  *
+ * Dazu kommen die gemeinsamen Testvektoren (tests/vectors/*.json). Sie werden
+ * unveraendert kopiert, damit Python und TypeScript gegen dieselbe Datei laufen.
+ *
  * Aufruf:  npm run daten [-- <pfad-zum-python-repo>]
  */
-import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync } from 'node:fs';
+import { copyFileSync, readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync } from 'node:fs';
 import { join, dirname, basename, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'yaml';
 
 const HIER = dirname(fileURLToPath(import.meta.url));
 const ZIEL = resolve(HIER, '..', 'src', 'data');
+const ZIEL_VEKTOREN = resolve(HIER, '..', 'tests', 'vectors');
 
 // Fallback: das Python-Repo liegt als Geschwister-Ordner daneben.
-const QUELLE = resolve(
-  process.argv[2] ?? join(HIER, '..', '..', 'codename-generator'),
-  'src',
-  'codename_generator',
-  'data',
-);
+const PYTHON_REPO = resolve(process.argv[2] ?? join(HIER, '..', '..', 'codename-generator'));
+const QUELLE = resolve(PYTHON_REPO, 'src', 'codename_generator', 'data');
+const QUELLE_VEKTOREN = resolve(PYTHON_REPO, 'tests', 'vectors');
 
 const GENUS = new Set(['m', 'f', 'n', 'p']);
 
@@ -78,6 +79,16 @@ for (const sprache of readdirSync(join(QUELLE, 'modifiers')).sort()) {
 mkdirSync(ZIEL, { recursive: true });
 writeFileSync(join(ZIEL, 'themes.json'), `${JSON.stringify(themes, null, 2)}\n`, 'utf8');
 writeFileSync(join(ZIEL, 'modifiers.json'), `${JSON.stringify(modifiers, null, 2)}\n`, 'utf8');
+
+if (!existsSync(QUELLE_VEKTOREN)) {
+  console.error(`Testvektoren nicht gefunden: ${QUELLE_VEKTOREN}`);
+  process.exit(1);
+}
+mkdirSync(ZIEL_VEKTOREN, { recursive: true });
+const vektoren = readdirSync(QUELLE_VEKTOREN).filter((f) => f.endsWith('.json')).sort();
+for (const datei of vektoren) {
+  copyFileSync(join(QUELLE_VEKTOREN, datei), join(ZIEL_VEKTOREN, datei));
+}
 
 const woerter = themes.reduce((summe, t) => summe + t.words.length, 0);
 console.log(`${themes.length} Themes (${woerter} Woerter), Sprachen: ${Object.keys(modifiers).join(', ')}`);
