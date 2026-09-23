@@ -334,9 +334,9 @@ pruefe(
   `leere Merkliste raeumt den Speicher ab (local ${nachLeeren.schluessel})`,
 );
 
-// 9d. Eigenes Wort: "i" oeffnet das Feld, jeder Vorschlag traegt das Wort, und
+// 9d. Eigenes Wort: "o" oeffnet das Feld, jeder Vorschlag traegt das Wort, und
 //     ohne Dubletten. Die Adresse ?word= fuehrt direkt in diese Ansicht.
-await seite.locator('body').press('i');
+await seite.locator('body').press('o');
 await seite.keyboard.type('Sitemap');
 await seite.waitForTimeout(400);
 const wortZeilen = await seite.locator('ol li button').allInnerTexts();
@@ -406,7 +406,7 @@ pruefe(
     ankerAdresse.includes('pos=back'),
   `Adresse traegt Wort, Partner und Position (${ankerAdresse.split('?')[1]})`,
 );
-// 9f. Variieren: W haelt das Wort, K den Zusatz. Welches Wort das Themenwort
+// 9f. Variieren: W haelt das Wort, M den Zusatz. Welches Wort das Themenwort
 //     ist, sieht man von aussen nicht - deshalb: ein Wort des Ausgangsnamens
 //     steht in JEDER Variante, und der Ausgangsname selbst kommt nicht vor.
 const woerterVon = (name) => name.replace(/\s+MUT$/, '').split(/\s+/);
@@ -430,14 +430,14 @@ pruefe(
 );
 await seite.waitForTimeout(1500);
 const zweiterAusgang = (await held.innerText()).trim();
-await seite.locator('body').press('k');
+await seite.locator('body').press('m');
 await seite.waitForTimeout(400);
 const zusatzVarianten = (await seite.locator('ol li button').allInnerTexts()).map(ohneNummer);
 pruefe(
   zusatzVarianten.length === 20 &&
     !zusatzVarianten.includes(zweiterAusgang) &&
     gemeinsamMit(zweiterAusgang, zusatzVarianten),
-  `K von der Variante aus haelt den Zusatz von "${zweiterAusgang}" (${zusatzVarianten[0]})`,
+  `M von der Variante aus haelt den Zusatz von "${zweiterAusgang}" (${zusatzVarianten[0]})`,
 );
 pruefe(
   await seite.getByRole('button', { name: 'ADRESSE KOPIEREN' }).isDisabled(),

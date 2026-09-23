@@ -29,14 +29,14 @@ tracking, nothing leaves the page.
   built from proper names (gods, racehorses, Swatch models) work in both languages.
 - **Phonetic mutation** nudges a word off the dictionary: `Pegasus -> Pegasos`. A `*` marks
   a mutated suggestion.
-- **Your own word** (key `i`): your word is combined with the modifiers of the chosen
+- **Your own word** (key `o`): your word is combined with the modifiers of the chosen
   language, so `Sitemap` becomes `Obsidian Sitemap` or `Sitemap Proxy`. No name appears
   twice in a batch. Instead of modifiers, the word can also be combined with the words of
   a theme (`Sitemap Selene`, `Pollux Sitemap`), and `FRONT`/`BACK` decide where it
   stands. The address `?word=Sitemap&partner=greek-gods&pos=front` opens this view
   directly.
-- **Varying** (keys `w` and `k`): `w` keeps the word of the big name and rolls new
-  modifiers, `k` keeps the modifier and swaps the word - `Jump Pangolin` becomes
+- **Varying** (keys `w` and `m`): `w` keeps the word of the big name and rolls new
+  modifiers, `m` keeps the modifier and swaps the word - `Jump Pangolin` becomes
   `Magenta Pangolin`, then `Magenta Sloth`. From a variant you can go on, `F1` rolls new
   variants, picking a theme in the list goes back.
 - **Shortlist** (key `f` keeps a name, `v` shows the list): kept names stay in your

@@ -463,15 +463,15 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
         // Dieselben Buchstaben wie in der TUI.
         f: merken,
         F: merken,
-        i: () => oeffne('wort', 'wort'),
-        I: () => oeffne('wort', 'wort'),
+        o: () => oeffne('wort', 'wort'),
+        O: () => oeffne('wort', 'wort'),
         v: () => oeffne('merkliste'),
         V: () => oeffne('merkliste'),
         '+': () => oeffne('merkliste', 'idee'),
         w: () => variieren('word'),
         W: () => variieren('word'),
-        k: () => variieren('modifier'),
-        K: () => variieren('modifier'),
+        m: () => variieren('modifier'),
+        M: () => variieren('modifier'),
       };
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       const aktion = tasten[e.key];
@@ -530,7 +530,7 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
               <FTaste kuerzel="W" onClick={() => variieren('word')} title={t.titelWortHalten}>
                 {t.wortHalten}
               </FTaste>
-              <FTaste kuerzel="K" onClick={() => variieren('modifier')} title={t.titelZusatzHalten}>
+              <FTaste kuerzel="M" onClick={() => variieren('modifier')} title={t.titelZusatzHalten}>
                 {t.zusatzHalten}
               </FTaste>
             </>

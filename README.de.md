@@ -30,14 +30,14 @@ Browser - kein Backend, kein Tracking, nichts verlässt die Seite.
   funktionieren in beiden Sprachen.
 - **Phonetische Mutation** schiebt ein Wort aus dem Wörterbuch heraus:
   `Pegasus -> Pegasos`. Ein `*` markiert einen mutierten Vorschlag.
-- **Eigenes Wort** (Taste `i`): Dein Wort wird mit den Zusätzen der gewählten Sprache
+- **Eigenes Wort** (Taste `o`): Dein Wort wird mit den Zusätzen der gewählten Sprache
   kombiniert, aus `Sitemap` wird `Obsidian Sitemap` oder `Sitemap Proxy`. Kein Name kommt
   im Stapel doppelt vor. Statt mit Zusätzen lässt sich das Wort auch mit den Wörtern
   eines Themas kombinieren (`Sitemap Selene`, `Pollux Sitemap`), und `VORN`/`HINTEN`
   legen fest, wo es steht. Die Adresse `?word=Sitemap&partner=greek-gods&pos=front`
   öffnet direkt diese Ansicht.
-- **Variieren** (Tasten `w` und `k`): `w` hält das Wort des großen Namens und würfelt neue
-  Zusätze, `k` hält den Zusatz und wechselt das Wort - aus `Witternder Bär` werden
+- **Variieren** (Tasten `w` und `m`): `w` hält das Wort des großen Namens und würfelt neue
+  Zusätze, `m` hält den Zusatz und wechselt das Wort - aus `Witternder Bär` werden
   `Witternde Feuerwanze` und `Witterndes Damwild`, richtig gebeugt. Aus einer Variante
   heraus geht es weiter, `F1` würfelt neue Varianten, ein Thema in der Liste führt zurück.
 - **Merkliste** (Taste `f` merkt, `v` zeigt sie): Gemerkte Namen bleiben im Browser, der
