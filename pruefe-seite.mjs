@@ -367,6 +367,57 @@ const themenOben = await seite.locator('aside ul').evaluate((ul) => ul.scrollTop
 pruefe(themenOben === 0, `Themenliste zeigt Merkliste und eigenes Wort (scrollTop ${themenOben})`);
 await seite.setViewportSize({ width: 1400, height: 1000 });
 
+// 9e. Anker: eigenes Wort mit Partner-Thema und Position. Der Permalink traegt
+//     beides, die Tasten VORN/HINTEN stellen das Wort um, die Wortzahl ist fest.
+await seite.goto(
+  `${URL_BASIS}?word=Sitemap&lang=en&seed=9&mut=0&partner=constellations&pos=front`,
+  { waitUntil: 'networkidle' },
+);
+await held.waitFor({ timeout: 10000 });
+const ankerVorn = await seite.locator('ol li button').allInnerTexts();
+const ohneNummer = (z) => z.replace(/^\s*\d+\.\s*/, '').trim();
+pruefe(
+  ankerVorn.length === 20 &&
+    ankerVorn.every((z) => /^SITEMAP \S/.test(ohneNummer(z))) &&
+    new Set(ankerVorn.map(ohneNummer)).size === 20,
+  `Anker vorn mit Sternbildern: 20 Namen, alle "SITEMAP ..." (${ohneNummer(ankerVorn[0] ?? '')})`,
+);
+pruefe(
+  (await seite.locator('#wort-partner').inputValue()) === 'constellations',
+  'Permalink setzt das Partner-Thema',
+);
+pruefe(
+  (await seite.locator('aside').innerText()).includes('fest'),
+  'Wortzahl ist mit Partner-Thema fest',
+);
+await seite.getByRole('button', { name: 'HINTEN', exact: true }).click();
+await seite.waitForTimeout(300);
+const ankerHinten = (await seite.locator('ol li button').allInnerTexts()).map(ohneNummer);
+pruefe(
+  ankerHinten.every((z) => / SITEMAP$/.test(z.replace(/\s+MUT$/, ''))),
+  `HINTEN stellt das Wort nach hinten (${ankerHinten[0]})`,
+);
+await seite.getByRole('button', { name: 'ADRESSE KOPIEREN' }).click();
+await seite.waitForTimeout(300);
+const ankerAdresse = await seite.evaluate(() => navigator.clipboard.readText());
+pruefe(
+  ankerAdresse.includes('word=Sitemap') &&
+    ankerAdresse.includes('partner=constellations') &&
+    ankerAdresse.includes('pos=back'),
+  `Adresse traegt Wort, Partner und Position (${ankerAdresse.split('?')[1]})`,
+);
+await seite.setViewportSize({ width: 1280, height: 700 });
+await seite.getByRole('button', { name: '40', exact: true }).click();
+await seite.waitForTimeout(500);
+const ankerUeberstand = await seite.evaluate(
+  () => document.documentElement.scrollHeight - window.innerHeight,
+);
+pruefe(
+  ankerUeberstand <= 2,
+  `kein Seitenscroll in der Anker-Ansicht bei 1280x700 (Ueberstand ${ankerUeberstand}px)`,
+);
+await seite.setViewportSize({ width: 1400, height: 1000 });
+
 // 10. Rechtsseiten und Sprachfassungen. Die Pflichtangaben muessen von der
 //     Startseite aus in einem Klick erreichbar sein - Rechtstexte, die man
 //     nur ueber die Adresszeile findet, erfuellen § 5 DDG nicht.

@@ -31,7 +31,10 @@ tracking, nothing leaves the page.
   a mutated suggestion.
 - **Your own word** (key `i`): your word is combined with the modifiers of the chosen
   language, so `Sitemap` becomes `Obsidian Sitemap` or `Sitemap Proxy`. No name appears
-  twice in a batch. The address `?word=Sitemap` opens this view directly.
+  twice in a batch. Instead of modifiers, the word can also be combined with the words of
+  a theme (`Sitemap Selene`, `Pollux Sitemap`), and `FRONT`/`BACK` decide where it
+  stands. The address `?word=Sitemap&partner=greek-gods&pos=front` opens this view
+  directly.
 - **Shortlist** (key `f` keeps a name, `v` shows the list): kept names stay in your
   browser, and the mutation slider still applies to them. `+` adds ideas of your own,
   `Copy list` puts all names on the clipboard, one per line. The storage format is the one

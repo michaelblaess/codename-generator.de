@@ -23,7 +23,14 @@ export type Pattern =
   | 'theme-agent'
   | 'theme'
   | 'adj-theme-verb'
-  | 'adj-verb-theme';
+  | 'adj-verb-theme'
+  // Anker: eigenes Wort zusammen mit einem Themenwort, nie gebeugt.
+  | 'anchor-theme'
+  | 'theme-anchor';
+
+/** Wo das eigene Wort im Namen steht. */
+export type AnchorPosition = 'any' | 'front' | 'back';
+export const ANCHOR_POSITIONS: AnchorPosition[] = ['any', 'front', 'back'];
 
 export interface WordList {
   slug: string;
@@ -55,6 +62,8 @@ export interface Recipe {
   patternIndex: number;
   mutationRoll: number;
   mutationSeed: number;
+  // Eigenes Wort bei anchor-theme / theme-anchor, sonst leer.
+  anchor?: string;
 }
 
 // Anzahl der Komponenten (Modifier + Theme-Wort) pro Pattern.
@@ -66,7 +75,12 @@ export const PATTERN_WORD_COUNT: Record<Pattern, number> = {
   'theme-agent': 2,
   'adj-theme-verb': 3,
   'adj-verb-theme': 3,
+  'anchor-theme': 2,
+  'theme-anchor': 2,
 };
+
+// Modifier vor dem Themenwort - beim eigenen Wort heisst das: das Wort steht hinten.
+const PREFIX_PATTERNS: Pattern[] = ['adj-theme', 'verb-theme'];
 
 const TWO_WORD_PATTERNS: Pattern[] = ['adj-theme', 'verb-theme', 'theme-verb', 'theme-agent'];
 
@@ -80,6 +94,21 @@ function twoWordPatterns(language: string): Pattern[] {
 
 function threeWordPattern(language: string): Pattern {
   return language === GERMAN ? 'adj-verb-theme' : 'adj-theme-verb';
+}
+
+/** Zwei-Wort-Patterns fuer das eigene Wort mit Zusaetzen, gefiltert nach Position. */
+export function anchorModifierPatterns(language: string, position: AnchorPosition): Pattern[] {
+  const patterns = twoWordPatterns(language);
+  if (position === 'front') return patterns.filter((p) => !PREFIX_PATTERNS.includes(p));
+  if (position === 'back') return patterns.filter((p) => PREFIX_PATTERNS.includes(p));
+  return patterns;
+}
+
+/** Patterns fuer das eigene Wort mit einem Partner-Thema, gefiltert nach Position. */
+export function anchorThemePatterns(position: AnchorPosition): Pattern[] {
+  if (position === 'front') return ['anchor-theme'];
+  if (position === 'back') return ['theme-anchor'];
+  return ['anchor-theme', 'theme-anchor'];
 }
 
 // Zeichen, die im Slug ausgeschrieben gehoeren statt zerlegt zu werden.
@@ -302,6 +331,15 @@ export function render(
       name = `${adjective} ${attributiveVerb} ${rendered}`;
       sources = [recipe.themeWord, adjective, attributiveVerb];
       break;
+    // Der Anker bleibt ungebeugt, er ist ein Name und kein Attribut.
+    case 'anchor-theme':
+      name = `${recipe.anchor ?? ''} ${rendered}`;
+      sources = [recipe.themeWord, recipe.anchor ?? ''];
+      break;
+    case 'theme-anchor':
+      name = `${rendered} ${recipe.anchor ?? ''}`;
+      sources = [recipe.themeWord, recipe.anchor ?? ''];
+      break;
     default:
       name = rendered;
       sources = [recipe.themeWord];
@@ -348,13 +386,14 @@ export function composeName(pattern: Pattern, themeWord: string, modifiers: stri
       return themeWord;
     case 'theme-verb':
     case 'theme-agent':
+    case 'theme-anchor':
       return modifiers.length > 0 ? `${themeWord} ${modifiers[0]}` : themeWord;
     case 'adj-theme-verb':
       return modifiers.length >= 2 ? `${modifiers[0]} ${themeWord} ${modifiers[1]}` : themeWord;
     case 'adj-verb-theme':
       return modifiers.length >= 2 ? `${modifiers[0]} ${modifiers[1]} ${themeWord}` : themeWord;
     default:
-      // adj-theme und verb-theme: Modifier vorangestellt.
+      // adj-theme, verb-theme und anchor-theme: Modifier vorangestellt.
       return modifiers.length > 0 ? `${modifiers[0]} ${themeWord}` : themeWord;
   }
 }
@@ -390,8 +429,12 @@ export function renderFavorite(favorite: Suggestion, mutationChance: number): Su
   };
 }
 
-/** Virtuelles Thema fuer ein eigenes Wort: nur dieses Wort, Modifier der gewaehlten Sprache. */
-export function seededTheme(word: string, language: string): WordList {
+/**
+ * Virtuelles Thema fuer ein eigenes Wort: nur dieses Wort, Modifier der
+ * gewaehlten Sprache. Eine feste Position legt die Patterns und damit zwei
+ * Woerter fest.
+ */
+export function seededTheme(word: string, language: string, position: AnchorPosition = 'any'): WordList {
   return {
     slug: 'custom-seed',
     name: word,
@@ -400,7 +443,7 @@ export function seededTheme(word: string, language: string): WordList {
     genders: [],
     adjectives: [],
     verbs: [],
-    patterns: [],
+    patterns: position === 'any' ? [] : anchorModifierPatterns(language, position),
     mutate: true,
     defaultMutation: null,
     language,
@@ -425,11 +468,17 @@ function visibleModifier(pattern: Pattern, adjective: string, verb: string, agen
  * sichtbar ist - bei zwei Woertern der eine Modifier, bei drei Adjektiv plus
  * Verb. So kommt kein Name doppelt vor (wie in der TUI).
  */
-function generateSeededRecipes(word: string, count: number, language: string, rng: Rng): Recipe[] {
+function generateSeededRecipes(
+  word: string,
+  count: number,
+  language: string,
+  position: AnchorPosition,
+  rng: Rng,
+): Recipe[] {
   const adjectives = modifierPool(language, 'adjectives');
   const verbs = modifierPool(language, 'verbs');
   const agents = modifierPool(language, 'agents');
-  const patterns = twoWordPatterns(language);
+  const patterns = anchorModifierPatterns(language, position);
   const recipes: Recipe[] = [];
   const seenTwo = new Set<string>();
   const seenThree = new Set<string>();
@@ -457,8 +506,64 @@ function generateSeededRecipes(word: string, count: number, language: string, rn
   return recipes;
 }
 
+/**
+ * Virtuelles Thema: das eigene Wort mit den Woertern eines Partner-Themas.
+ * Mutiert wird nur das Partner-Wort.
+ */
+export function anchoredTheme(
+  anchor: string,
+  partner: WordList,
+  language: string,
+  position: AnchorPosition = 'any',
+): WordList {
+  return {
+    ...partner,
+    slug: `custom-seed-${partner.slug}`,
+    name: `${anchor} + ${partner.name}`,
+    adjectives: [],
+    verbs: [],
+    patterns: anchorThemePatterns(position),
+    language: effectiveLanguage(partner, language),
+  };
+}
+
+/** Rezepte aus eigenem Wort und Partner-Thema, jedes Partner-Wort hoechstens einmal, nie das Wort selbst. */
+function generateAnchoredRecipes(
+  anchor: string,
+  partner: WordList,
+  count: number,
+  position: AnchorPosition,
+  rng: Rng,
+): Recipe[] {
+  const patternChoices = anchorThemePatterns(position).length;
+  const kandidaten = partner.words.filter((w) => w.toLowerCase() !== anchor.toLowerCase());
+  const recipes: Recipe[] = [];
+  const seen = new Set<string>();
+  const maxAttempts = count * 40;
+  for (let attempt = 0; attempt < maxAttempts && kandidaten.length > 0 && recipes.length < count; attempt += 1) {
+    const themeWord = rng.choice(kandidaten);
+    const key = themeWord.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    recipes.push({
+      themeWord,
+      adjective: '',
+      verb: '',
+      agent: '',
+      patternIndex: rng.range(patternChoices),
+      mutationRoll: rng.random(),
+      mutationSeed: rng.range(0x7fffffff),
+      anchor,
+    });
+  }
+  return recipes;
+}
+
 export interface SeededOptions {
   word: string;
+  // Partner-Thema (Slug). Ohne Partner kommen Adjektive und Verben dazu.
+  partner?: string;
+  position?: AnchorPosition;
   count?: number;
   mutationChance?: number;
   wordCount?: number;
@@ -475,11 +580,19 @@ export function suggestSeeded(options: SeededOptions): { suggestions: Suggestion
     wordCount = 2,
     language = DEFAULT_LANGUAGE,
     seed = randomSeed(),
+    partner,
+    position = 'any',
   } = options;
   const trimmed = word.trim();
   if (!trimmed) return { suggestions: [], seed };
-  const theme = seededTheme(trimmed, language);
-  const recipes = generateSeededRecipes(trimmed, count, language, new Rng(seed));
+  const partnerTheme = partner ? themeBySlug(partner) : undefined;
+  const theme = partnerTheme
+    ? anchoredTheme(trimmed, partnerTheme, language, position)
+    : seededTheme(trimmed, language, position);
+  const rng = new Rng(seed);
+  const recipes = partnerTheme
+    ? generateAnchoredRecipes(trimmed, partnerTheme, count, position, rng)
+    : generateSeededRecipes(trimmed, count, language, position, rng);
   return {
     suggestions: recipes.map((r) => render(r, theme, wordCount, mutationChance, language)),
     seed,

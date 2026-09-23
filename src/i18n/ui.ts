@@ -75,6 +75,12 @@ export interface UiTexte {
   meldungSpeicherGesperrt: string;
   meldungKeineRunde: string;
   wortListe: string;
+  partner: string;
+  zusaetze: string;
+  stellung: string;
+  stellungen: Record<'any' | 'front' | 'back', string>;
+  titelPartner: string;
+  titelStellung: string;
   laufschrift: string[];
 }
 
@@ -144,6 +150,12 @@ const de: UiTexte = {
   meldungSpeicherGesperrt: 'SPEICHER GESPERRT - MERKLISTE GILT NUR BIS ZUM SCHLIESSEN',
   meldungKeineRunde: 'DIE MERKLISTE HAT KEINE RUNDEN',
   wortListe: 'LISTE',
+  partner: 'MIT',
+  zusaetze: 'Zusätzen (Adjektive, Verben)',
+  stellung: 'WORT',
+  stellungen: { any: 'EGAL', front: 'VORN', back: 'HINTEN' },
+  titelPartner: 'Womit dein Wort kombiniert wird: Zusätze oder die Wörter eines Themas',
+  titelStellung: 'Wo dein Wort im Namen steht - eine feste Stelle heißt: zwei Wörter',
   laufschrift: [
     'CODENAME GENERATOR',
     'ALLES LÄUFT IM BROWSER, NICHTS WIRD GESENDET',
@@ -222,6 +234,12 @@ const en: UiTexte = {
   meldungSpeicherGesperrt: 'STORAGE BLOCKED - SHORTLIST LASTS UNTIL YOU CLOSE THE TAB',
   meldungKeineRunde: 'THE SHORTLIST HAS NO ROUNDS',
   wortListe: 'LIST',
+  partner: 'WITH',
+  zusaetze: 'modifiers (adjectives, verbs)',
+  stellung: 'WORD',
+  stellungen: { any: 'ANY', front: 'FRONT', back: 'BACK' },
+  titelPartner: 'What your word is combined with: modifiers or the words of a theme',
+  titelStellung: 'Where your word stands in the name - a fixed spot means two words',
   laufschrift: [
     'CODENAME GENERATOR',
     'EVERYTHING RUNS IN YOUR BROWSER, NOTHING IS SENT ANYWHERE',

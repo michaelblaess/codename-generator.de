@@ -8,10 +8,13 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
+  anchorModifierPatterns,
+  anchorThemePatterns,
   render,
   renderFavorite,
   slugify,
   titleCase,
+  type AnchorPosition,
   type Pattern,
   type Recipe,
   type WordList,
@@ -23,7 +26,14 @@ import type { RandomSource } from '../src/lib/rng';
 interface RenderCase {
   _note: string;
   theme: { words: string[]; genders?: string[]; patterns?: string[]; mutate?: boolean; language: string };
-  recipe: { theme_word: string; adjective: string; verb: string; agent: string; pattern_index: number };
+  recipe: {
+    theme_word: string;
+    adjective: string;
+    verb: string;
+    agent: string;
+    pattern_index: number;
+    anchor?: string;
+  };
   word_count: number;
   language: string;
   expected: { name: string; slug: string; pattern: string; sources: string[] };
@@ -36,6 +46,13 @@ interface Vectors {
   mutate: Array<{ word: string; script: number[]; intensity?: number; expected: string }>;
   render: RenderCase[];
   favorite: Array<{ _note: string; pattern: string; sources: string[]; expected: { name: string; slug: string } }>;
+  anchor_patterns: Array<{
+    _note: string;
+    kind: 'modifier' | 'theme';
+    language: string;
+    position: AnchorPosition;
+    expected: string[];
+  }>;
 }
 
 const vectors = JSON.parse(
@@ -121,6 +138,7 @@ describe('Vektoren: render', () => {
       // Ohne Mutation - deren Zufall ist zwischen Python und JS verschieden.
       mutationRoll: 1,
       mutationSeed: 0,
+      anchor: vector.recipe.anchor ?? '',
     };
     const suggestion = render(recipe, theme(vector.theme), vector.word_count, 0, vector.language);
     expect({
@@ -139,5 +157,13 @@ describe('Vektoren: favorite', () => {
     const rendered = renderFavorite(stored, 0);
     expect({ name: rendered.name, slug: rendered.slug }).toEqual(expected);
     expect(rendered.mutated).toBe(false);
+  });
+});
+
+describe('Vektoren: anchor_patterns', () => {
+  it.each(vectors.anchor_patterns)('$_note', ({ kind, language, position, expected }) => {
+    const patterns =
+      kind === 'modifier' ? anchorModifierPatterns(language, position) : anchorThemePatterns(position);
+    expect(patterns).toEqual(expected);
   });
 });

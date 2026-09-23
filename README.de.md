@@ -32,7 +32,10 @@ Browser - kein Backend, kein Tracking, nichts verlässt die Seite.
   `Pegasus -> Pegasos`. Ein `*` markiert einen mutierten Vorschlag.
 - **Eigenes Wort** (Taste `i`): Dein Wort wird mit den Zusätzen der gewählten Sprache
   kombiniert, aus `Sitemap` wird `Obsidian Sitemap` oder `Sitemap Proxy`. Kein Name kommt
-  im Stapel doppelt vor. Die Adresse `?word=Sitemap` öffnet direkt diese Ansicht.
+  im Stapel doppelt vor. Statt mit Zusätzen lässt sich das Wort auch mit den Wörtern
+  eines Themas kombinieren (`Sitemap Selene`, `Pollux Sitemap`), und `VORN`/`HINTEN`
+  legen fest, wo es steht. Die Adresse `?word=Sitemap&partner=greek-gods&pos=front`
+  öffnet direkt diese Ansicht.
 - **Merkliste** (Taste `f` merkt, `v` zeigt sie): Gemerkte Namen bleiben im Browser, der
   Mutationsregler wirkt auf sie weiter. Mit `+` setzt du eigene Ideen dazu, `Liste
   kopieren` legt alle Namen untereinander in die Zwischenablage. Das Speicherformat ist das

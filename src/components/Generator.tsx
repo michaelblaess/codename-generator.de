@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
+  ANCHOR_POSITIONS,
+  type AnchorPosition,
   DEFAULT_LANGUAGE,
   LANGUAGES,
   type Suggestion,
@@ -35,6 +37,8 @@ function readUrlState() {
     mutation: p.get('mut') ? Number(p.get('mut')) : null,
     words: p.get('words') ? Number(p.get('words')) : null,
     word: (p.get('word') ?? '').trim(),
+    partner: p.get('partner') ?? '',
+    position: p.get('pos') ?? '',
   };
 }
 
@@ -99,6 +103,15 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
   const [aktiv, setAktiv] = useState<number>(0);
   const [ansicht, setAnsicht] = useState<Ansicht>(() => (start?.word ? 'wort' : 'thema'));
   const [wort, setWort] = useState<string>(() => start?.word ?? '');
+  // Partner des eigenen Worts: leer = Zusaetze, sonst ein Themen-Slug.
+  const [partner, setPartner] = useState<string>(() =>
+    start?.partner && themeBySlug(start.partner) ? start.partner : '',
+  );
+  const [position, setPosition] = useState<AnchorPosition>(() =>
+    ANCHOR_POSITIONS.includes(start?.position as AnchorPosition)
+      ? (start?.position as AnchorPosition)
+      : 'any',
+  );
   const [idee, setIdee] = useState<string>('');
   // client:only - die Komponente laeuft nur im Browser, der Speicher ist also
   // schon beim ersten Rendern lesbar.
@@ -164,12 +177,45 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
     const mutationChance = mutation / 100;
     if (ansicht === 'merkliste') return merkliste.map((f) => renderFavorite(f, mutationChance));
     if (ansicht === 'wort') {
-      return suggestSeeded({ word: wort, count, mutationChance, wordCount, language, seed })
-        .suggestions;
+      return suggestSeeded({
+        word: wort,
+        partner,
+        position,
+        count,
+        mutationChance,
+        wordCount,
+        language,
+        seed,
+      }).suggestions;
     }
     if (!theme) return [];
     return suggest({ themeSlug, count, mutationChance, wordCount, language, seed }).suggestions;
-  }, [ansicht, merkliste, wort, themeSlug, count, mutation, wordCount, language, seed, theme]);
+  }, [
+    ansicht,
+    merkliste,
+    wort,
+    partner,
+    position,
+    themeSlug,
+    count,
+    mutation,
+    wordCount,
+    language,
+    seed,
+    theme,
+  ]);
+
+  // Das Partner-Thema muss in der Namenssprache sichtbar sein, sonst zurueck
+  // auf die Zusaetze - dieselbe Regel wie in der TUI.
+  useEffect(() => {
+    if (partner && !available.some((th) => th.slug === partner)) setPartner('');
+  }, [available, partner]);
+
+  // Partner oder feste Position legen zwei Woerter fest.
+  const wortzahlFest =
+    ansicht === 'merkliste' ||
+    (ansicht === 'thema' && Boolean(theme?.patterns.length)) ||
+    (ansicht === 'wort' && (Boolean(partner) || position !== 'any'));
 
   const gemerkt = useMemo(() => new Set(merkliste.map((f) => f.slug)), [merkliste]);
 
@@ -245,9 +291,13 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
       mut: String(mutation),
       words: String(wordCount),
     });
-    if (ansicht === 'wort' && wort.trim()) p.set('word', wort.trim());
+    if (ansicht === 'wort' && wort.trim()) {
+      p.set('word', wort.trim());
+      if (partner) p.set('partner', partner);
+      if (position !== 'any') p.set('pos', position);
+    }
     void kopieren(`${window.location.origin}${window.location.pathname}?${p}`, t.wortAdresse);
-  }, [themeSlug, language, seed, mutation, wordCount, ansicht, wort, kopieren]);
+  }, [themeSlug, language, seed, mutation, wordCount, ansicht, wort, partner, position, kopieren]);
 
   const listeKopieren = useCallback(() => {
     if (suggestions.length === 0) return;
@@ -431,6 +481,41 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
               />
             </label>
           )}
+          {ansicht === 'wort' && (
+            <div className="eingabe mb-2 flex-wrap">
+              <label htmlFor="wort-partner" className="pixel text-[0.5rem] text-gold">
+                {t.partner}
+              </label>
+              <select
+                id="wort-partner"
+                value={partner}
+                onChange={(e) => setPartner(e.target.value)}
+                title={t.titelPartner}
+              >
+                <option value="">{t.zusaetze}</option>
+                {available.map((th) => (
+                  <option key={th.slug} value={th.slug}>
+                    {th.name}
+                  </option>
+                ))}
+              </select>
+              {/* Beschriftung und Tasten brechen gemeinsam um - schmal stand
+                  "WORT" sonst allein am Zeilenende. */}
+              <span className="flex items-center gap-2">
+                <span className="pixel text-[0.5rem] text-gold">{t.stellung}</span>
+                {ANCHOR_POSITIONS.map((pos) => (
+                  <FTaste
+                    key={pos}
+                    active={pos === position}
+                    onClick={() => setPosition(pos)}
+                    title={t.titelStellung}
+                  >
+                    {t.stellungen[pos]}
+                  </FTaste>
+                ))}
+              </span>
+            </div>
+          )}
           {ansicht === 'merkliste' && (
             <div className="eingabe mb-2">
               <label htmlFor="eigene-idee" className="pixel text-[0.5rem] text-gold">
@@ -602,16 +687,13 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
                   key={n}
                   active={n === wordCount}
                   onClick={() => setWordCount(n)}
-                  title={theme?.patterns.length ? t.titelWortzahlFest : undefined}
+                  title={wortzahlFest ? t.titelWortzahlFest : undefined}
                   disabled={ansicht === 'merkliste'}
                 >
                   {n}
                 </FTaste>
               ))}
-              {(ansicht === 'merkliste' ||
-                (ansicht === 'thema' && Boolean(theme?.patterns.length))) && (
-                <span className="text-[0.62rem] text-magenta">{t.fest}</span>
-              )}
+              {wortzahlFest && <span className="text-[0.62rem] text-magenta">{t.fest}</span>}
             </div>
           </section>
 
