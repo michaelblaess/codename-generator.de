@@ -38,7 +38,11 @@ jobs:
         with:
           path: dist
 
+  # Solange das Repo privat ist, gibt es kein Pages - der Deploy scheitert dann
+  # mit 404. Bis zum Livegang nur von Hand starten, Build und Tests laufen
+  # trotzdem bei jedem Push.
   deploy:
+    if: github.event_name == 'workflow_dispatch'
     needs: build
     runs-on: ubuntu-latest
     environment:
