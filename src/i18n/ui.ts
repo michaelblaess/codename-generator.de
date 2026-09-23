@@ -88,6 +88,9 @@ export interface UiTexte {
   titelZusatzHalten: string;
   meldungNichtsZuVariieren: string;
   meldungMerklisteNichtVariierbar: string;
+  mix: string;
+  keinMix: string;
+  titelMix: string;
   laufschrift: string[];
 }
 
@@ -170,6 +173,9 @@ const de: UiTexte = {
   titelZusatzHalten: 'Den Zusatz dieses Namens behalten und das Wort wechseln (Taste M)',
   meldungNichtsZuVariieren: 'HIER GIBT ES NICHTS ZU VARIIEREN',
   meldungMerklisteNichtVariierbar: 'MERKLISTE NICHT VARIIERBAR - ERST EIN THEMA WÄHLEN',
+  mix: 'MIX',
+  keinMix: 'kein Mix',
+  titelMix: 'Das Thema mit einem zweiten kreuzen - je ein Wort aus beiden, z.B. Snowdon Lepus',
   laufschrift: [
     'CODENAME GENERATOR',
     'ALLES LÄUFT IM BROWSER, NICHTS WIRD GESENDET',
@@ -262,6 +268,9 @@ const en: UiTexte = {
   titelZusatzHalten: 'Keep the modifier of this name and swap the word (key M)',
   meldungNichtsZuVariieren: 'NOTHING TO VARY HERE',
   meldungMerklisteNichtVariierbar: 'SHORTLIST CANNOT BE VARIED - PICK A THEME FIRST',
+  mix: 'MIX',
+  keinMix: 'no mix',
+  titelMix: 'Cross the theme with a second one - one word from each, e.g. Snowdon Lepus',
   laufschrift: [
     'CODENAME GENERATOR',
     'EVERYTHING RUNS IN YOUR BROWSER, NOTHING IS SENT ANYWHERE',

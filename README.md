@@ -35,6 +35,9 @@ tracking, nothing leaves the page.
   a theme (`Sitemap Selene`, `Pollux Sitemap`), and `FRONT`/`BACK` decide where it
   stands. The address `?word=Sitemap&partner=greek-gods&pos=front` opens this view
   directly.
+- **Theme mix** (MIX above the list, address `?theme=whisky&mix=constellations`): the theme
+  is crossed with a second one, every name takes one word from each (`Rigel
+  Andromeda`). No word appears twice in a batch.
 - **Varying** (keys `w` and `m`): `w` keeps the word of the big name and rolls new
   modifiers, `m` keeps the modifier and swaps the word - `Jump Pangolin` becomes
   `Magenta Pangolin`, then `Magenta Sloth`. From a variant you can go on, `F1` rolls new

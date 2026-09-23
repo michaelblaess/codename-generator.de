@@ -449,6 +449,35 @@ pruefe(
   !(await seite.locator('section p').first().innerText()).includes('VARIANTEN'),
   'ein Thema in der Liste verlaesst die Varianten',
 );
+
+// 9g. Themen-Mix: Whisky x Sternbilder. Jede Zeile traegt ein Sternbild (aus
+//     den ausgelieferten Daten gelesen, nicht geraten), die Adresse den Mix,
+//     und "kein Mix" fuehrt zu reinen Whisky-Namen zurueck.
+const sternbilder = JSON.parse(readFileSync('src/data/themes.json', 'utf8'))
+  .find((th) => th.slug === 'constellations')
+  .words.map((w) => w.toUpperCase());
+const traegtStern = (zeile) => sternbilder.some((s) => ohneNummer(zeile).split(/\s+/).join(' ').includes(s));
+await seite.goto(`${URL_BASIS}?theme=whisky&mix=constellations&lang=en&seed=3&mut=0&words=2`, {
+  waitUntil: 'networkidle',
+});
+await held.waitFor({ timeout: 10000 });
+const mixZeilen = await seite.locator('ol li button').allInnerTexts();
+pruefe(
+  (await seite.locator('#thema-mix').inputValue()) === 'constellations' &&
+    (await seite.locator('section p').first().innerText()).includes('WHISKY X CONSTELLATIONS') &&
+    mixZeilen.length === 20 &&
+    mixZeilen.every(traegtStern),
+  `Mix Whisky x Sternbilder: 20 Namen mit Sternbild (${ohneNummer(mixZeilen[0] ?? '')})`,
+);
+await seite.getByRole('button', { name: 'ADRESSE KOPIEREN' }).click();
+await seite.waitForTimeout(300);
+const mixAdresse = await seite.evaluate(() => navigator.clipboard.readText());
+pruefe(mixAdresse.includes('mix=constellations'), `Adresse traegt den Mix (${mixAdresse.split('?')[1]})`);
+await seite.locator('#thema-mix').selectOption('');
+await seite.waitForTimeout(300);
+const ohneMix = await seite.locator('ol li button').allInnerTexts();
+pruefe(!ohneMix.every(traegtStern), 'kein Mix fuehrt zu reinen Whisky-Namen zurueck');
+
 await seite.goto(
   `${URL_BASIS}?word=Sitemap&lang=en&seed=9&mut=0&partner=constellations&pos=back`,
   { waitUntil: 'networkidle' },

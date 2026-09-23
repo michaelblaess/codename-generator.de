@@ -36,6 +36,9 @@ Browser - kein Backend, kein Tracking, nichts verlässt die Seite.
   eines Themas kombinieren (`Sitemap Selene`, `Pollux Sitemap`), und `VORN`/`HINTEN`
   legen fest, wo es steht. Die Adresse `?word=Sitemap&partner=greek-gods&pos=front`
   öffnet direkt diese Ansicht.
+- **Themen-Mix** (MIX über der Liste, Adresse `?theme=whisky&mix=constellations`): Das Thema
+  wird mit einem zweiten gekreuzt, jeder Name trägt je ein Wort aus beiden
+  (`Rigel Andromeda`). Kein Wort kommt im Stapel doppelt vor.
 - **Variieren** (Tasten `w` und `m`): `w` hält das Wort des großen Namens und würfelt neue
   Zusätze, `m` hält den Zusatz und wechselt das Wort - aus `Witternder Bär` werden
   `Witternde Feuerwanze` und `Witterndes Damwild`, richtig gebeugt. Aus einer Variante

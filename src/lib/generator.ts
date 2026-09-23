@@ -353,6 +353,8 @@ export function render(
 
 export interface SuggestOptions {
   themeSlug: string;
+  // Themen-Mix: Slug eines zweiten Themas, je ein Wort aus beiden.
+  mix?: string;
   count?: number;
   mutationChance?: number;
   wordCount?: number;
@@ -377,13 +379,18 @@ export function suggest(options: SuggestOptions): Stapel {
     wordCount = 2,
     language = DEFAULT_LANGUAGE,
     seed = randomSeed(),
+    mix,
   } = options;
 
-  const theme = themeBySlug(themeSlug);
-  if (!theme) throw new Error(`Unknown theme: ${themeSlug}`);
+  const base = themeBySlug(themeSlug);
+  if (!base) throw new Error(`Unknown theme: ${themeSlug}`);
+  const second = mix && mix !== themeSlug ? themeBySlug(mix) : undefined;
+  const theme = second ? crossedTheme(base, second, language) : base;
 
   const rng = new Rng(seed);
-  const recipes = generateRecipes(theme, count, language, rng);
+  const recipes = second
+    ? generateCrossedRecipes(base, second, count, rng)
+    : generateRecipes(base, count, language, rng);
   return {
     suggestions: recipes.map((r) => render(r, theme, wordCount, mutationChance, language)),
     seed,
@@ -689,6 +696,57 @@ export function suggestVariants(options: VariantOptions): Stapel {
     recipes,
     theme,
   };
+}
+
+/**
+ * Virtuelles Thema: zwei Themen gekreuzt ("Taurus Orion"). Technisch ein
+ * wechselnder Anker - das Wort aus `first` steht als Anker, das aus `second`
+ * als Themenwort. Genus, Mutation und Sprache kommen von `second`.
+ */
+export function crossedTheme(first: WordList, second: WordList, language: string): WordList {
+  return {
+    ...second,
+    slug: `mix-${first.slug}-${second.slug}`,
+    name: `${first.name} x ${second.name}`,
+    description: `${first.name} crossed with ${second.name}`,
+    adjectives: [],
+    verbs: [],
+    patterns: anchorThemePatterns('any'),
+    language: effectiveLanguage(second, language),
+  };
+}
+
+/** Je ein Wort aus beiden Themen, jedes Wort hoechstens einmal, nie dasselbe Wort zweimal. */
+function generateCrossedRecipes(first: WordList, second: WordList, count: number, rng: Rng): Recipe[] {
+  const patternChoices = anchorThemePatterns('any').length;
+  const recipes: Recipe[] = [];
+  const seenFirst = new Set<string>();
+  const seenSecond = new Set<string>();
+  const maxAttempts = count * 40;
+  for (
+    let attempt = 0;
+    attempt < maxAttempts && first.words.length > 0 && second.words.length > 0 && recipes.length < count;
+    attempt += 1
+  ) {
+    const anchor = rng.choice(first.words);
+    const themeWord = rng.choice(second.words);
+    const a = anchor.toLowerCase();
+    const b = themeWord.toLowerCase();
+    if (a === b || seenFirst.has(a) || seenSecond.has(b)) continue;
+    seenFirst.add(a);
+    seenSecond.add(b);
+    recipes.push({
+      themeWord,
+      adjective: '',
+      verb: '',
+      agent: '',
+      patternIndex: rng.range(patternChoices),
+      mutationRoll: rng.random(),
+      mutationSeed: rng.range(0x7fffffff),
+      anchor,
+    });
+  }
+  return recipes;
 }
 
 export interface SeededOptions {

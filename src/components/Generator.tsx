@@ -53,6 +53,7 @@ function readUrlState() {
     word: (p.get('word') ?? '').trim(),
     partner: p.get('partner') ?? '',
     position: p.get('pos') ?? '',
+    mix: p.get('mix') ?? '',
   };
 }
 
@@ -119,6 +120,11 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
   const [variante, setVariante] = useState<Variante | null>(null);
   const [wort, setWort] = useState<string>(() => start?.word ?? '');
   // Partner des eigenen Worts: leer = Zusaetze, sonst ein Themen-Slug.
+  // Themen-Mix: zweites Thema, je ein Wort aus beiden. Leer = kein Mix.
+  const [mix, setMix] = useState<string>(() =>
+    start?.mix && themeBySlug(start.mix) ? start.mix : '',
+  );
+  const mixAktiv = Boolean(mix) && mix !== themeSlug;
   const [partner, setPartner] = useState<string>(() =>
     start?.partner && themeBySlug(start.partner) ? start.partner : '',
   );
@@ -216,7 +222,7 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
       });
     }
     if (!theme) return { suggestions: [], seed, recipes: [], theme: null };
-    return suggest({ themeSlug, count, mutationChance, wordCount, language, seed });
+    return suggest({ themeSlug, mix, count, mutationChance, wordCount, language, seed });
   }, [
     ansicht,
     variante,
@@ -224,6 +230,7 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
     wort,
     partner,
     position,
+    mix,
     themeSlug,
     count,
     mutation,
@@ -247,12 +254,13 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
   // auf die Zusaetze - dieselbe Regel wie in der TUI.
   useEffect(() => {
     if (partner && !available.some((th) => th.slug === partner)) setPartner('');
+    if (mix && !available.some((th) => th.slug === mix)) setMix('');
   }, [available, partner]);
 
   // Partner oder feste Position legen zwei Woerter fest.
   const wortzahlFest =
     ansicht === 'merkliste' ||
-    (ansicht === 'thema' && Boolean(theme?.patterns.length)) ||
+    (ansicht === 'thema' && (Boolean(theme?.patterns.length) || mixAktiv)) ||
     (ansicht === 'wort' && (Boolean(partner) || position !== 'any')) ||
     (ansicht === 'variante' && Boolean(variante?.theme.patterns.length));
 
@@ -335,8 +343,22 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
       if (partner) p.set('partner', partner);
       if (position !== 'any') p.set('pos', position);
     }
+    if (ansicht === 'thema' && mixAktiv) p.set('mix', mix);
     void kopieren(`${window.location.origin}${window.location.pathname}?${p}`, t.wortAdresse);
-  }, [themeSlug, language, seed, mutation, wordCount, ansicht, wort, partner, position, kopieren]);
+  }, [
+    themeSlug,
+    language,
+    seed,
+    mutation,
+    wordCount,
+    ansicht,
+    wort,
+    partner,
+    position,
+    mix,
+    mixAktiv,
+    kopieren,
+  ]);
 
   const listeKopieren = useCallback(() => {
     if (suggestions.length === 0) return;
@@ -490,7 +512,7 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
         ? `${t.varianten} ${variante.name}`
         : ansicht === 'wort'
           ? `${t.eigenesWort}: ${wort.trim() || '-'}`
-          : (theme?.name ?? '');
+          : (stapel.theme?.name ?? theme?.name ?? '');
 
   return (
     <>
@@ -551,6 +573,28 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
               </span>
             )}
           </div>
+          {ansicht === 'thema' && (
+            <div className="eingabe mb-2">
+              <label htmlFor="thema-mix" className="pixel text-[0.5rem] text-gold">
+                {t.mix}
+              </label>
+              <select
+                id="thema-mix"
+                value={mixAktiv ? mix : ''}
+                onChange={(e) => setMix(e.target.value)}
+                title={t.titelMix}
+              >
+                <option value="">{t.keinMix}</option>
+                {available
+                  .filter((th) => th.slug !== themeSlug)
+                  .map((th) => (
+                    <option key={th.slug} value={th.slug}>
+                      {th.name}
+                    </option>
+                  ))}
+              </select>
+            </div>
+          )}
           {ansicht === 'wort' && (
             <label className="eingabe mb-2">
               <span className="pixel text-[0.5rem] text-gold">{t.deinWort}</span>
