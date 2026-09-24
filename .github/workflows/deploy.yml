@@ -26,6 +26,15 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      # Wortlisten und Testvektoren stammen aus dem Python-Repo (oeffentlich,
+      # kein Token noetig). Weicht die Kopie hier ab, faellt der Build - vorher
+      # griff dieser Waechter nur, wenn jemand ihn lokal aufrief.
+      - uses: actions/checkout@v5
+        with:
+          repository: michaelblaess/codename-generator
+          path: python-repo
+      - name: Daten gegen das Python-Repo pruefen
+        run: node tools/sync-wordlists.mjs python-repo && git diff --exit-code -- src/data tests/vectors
       - name: Tests (vitest)
         run: npm test
       # Fremde Musik liegt nicht im Repo. Schlaegt das Holen fehl, geht die

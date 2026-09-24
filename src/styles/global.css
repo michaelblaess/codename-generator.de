@@ -87,6 +87,21 @@ body {
   min-height: 0;
 }
 
+/* Schmale Schirme: Bedienfeld, Methoden- und Filterzeile brauchen mehr Hoehe,
+ * als ein Handy hat. Dort rollt die Seite, und beide Listen behalten eine
+ * Mindesthoehe - vorher fiel die Namensliste auf null zusammen. */
+@media (max-width: 1023.98px) {
+  .bildschirm {
+    height: auto;
+    max-height: none;
+    min-height: 100dvh;
+  }
+
+  .kanal.panel {
+    min-height: 16rem;
+  }
+}
+
 /* --- Wege in der Fusszeile und in Rechtstexten ---------------------------*/
 .fussweg {
   color: var(--gruen);
@@ -210,6 +225,8 @@ body {
 
 .rang-marke {
   color: var(--gruen);
+  /* Die Pixelschrift ist kleiner als der Name - mittig statt oben. */
+  align-self: center;
 }
 
 /* --- Themenliste ---------------------------------------------------------

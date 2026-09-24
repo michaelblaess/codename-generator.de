@@ -40,6 +40,9 @@ seite.on('console', (m) => {
 seite.on('response', (r) => {
   if (r.status() >= 400) fehler.push(`HTTP ${r.status()}: ${r.url()}`);
 });
+// Jede Anfrage der Seite - fuer die Pruefung, dass Export und Import nichts senden.
+const anfragen = [];
+seite.on('request', (r) => anfragen.push(r.url()));
 
 const pruefe = (bedingung, text) => {
   console.log(`${bedingung ? 'OK  ' : 'FAIL'} ${text}`);
@@ -251,6 +254,20 @@ for (const groesse of [
 }
 
 await seite.screenshot({ path: 'smoke.png', fullPage: true });
+
+// 8b. Handy: dort darf die Seite rollen, aber keine Liste darf zusammenfallen.
+//     Mit Methoden- und Filterzeile hatte die Namensliste 0 Pixel Hoehe.
+await seite.setViewportSize({ width: 390, height: 844 });
+await seite.waitForTimeout(400);
+const handy = await seite.evaluate(() => ({
+  namen: document.querySelector('ol.panel')?.getBoundingClientRect().height ?? 0,
+  themen: document.querySelector('aside ul.panel')?.getBoundingClientRect().height ?? 0,
+  quer: document.documentElement.scrollWidth - window.innerWidth,
+}));
+pruefe(
+  handy.namen >= 200 && handy.themen >= 200 && handy.quer <= 0,
+  `Handy 390x844: Namensliste ${Math.round(handy.namen)}px, Themenliste ${Math.round(handy.themen)}px, quer ${handy.quer}px`,
+);
 
 // 9. Die Datenschutzerklaerung behauptet: keine Cookies, localStorage nur fuer
 //    die Merkliste und erst nach dem ersten Merken, kein sessionStorage. Das
@@ -477,6 +494,136 @@ await seite.locator('#thema-mix').selectOption('');
 await seite.waitForTimeout(300);
 const ohneMix = await seite.locator('ol li button').allInnerTexts();
 pruefe(!ohneMix.every(traegtStern), 'kein Mix fuehrt zu reinen Whisky-Namen zurueck');
+
+// 9h. Methoden, Ton, Filter und Klang. Was die Knoepfe tun, wird am Ergebnis
+//     gemessen: Anfangsbuchstaben, Tonwoerter aus den ausgelieferten Daten,
+//     Stabreim, absteigende Klangwerte - und alles muss im Permalink stehen.
+const zusatzDaten = JSON.parse(readFileSync('src/data/modifiers.json', 'utf8'));
+const zeilenOhneMarke = async () =>
+  (await seite.locator('ol li button').allInnerTexts()).map((z) =>
+    ohneNummer(z).replace(/\s+(\d+\s*)?(MUT)?$/, '').replace(/^★\s*/, '').trim(),
+  );
+await seite.goto(`${URL_BASIS}?theme=animals&lang=en&seed=4&mut=0&words=2&method=acronym&letters=sm`, {
+  waitUntil: 'networkidle',
+});
+await held.waitFor({ timeout: 10000 });
+const akronym = await zeilenOhneMarke();
+pruefe(
+  (await seite.locator('#thema-methode').inputValue()) === 'acronym' &&
+    (await seite.locator('#thema-buchstaben').inputValue()) === 'SM' &&
+    akronym.length > 5 &&
+    akronym.every((z) => z.split(/\s+/).map((w) => w[0]).join('') === 'SM'),
+  `Akronym SM: jedes Wort mit seinem Buchstaben (${akronym.length}, ${akronym[0]})`,
+);
+await seite.locator('#thema-buchstaben').fill('xq');
+await seite.waitForTimeout(300);
+pruefe(
+  (await seite.locator('ol').innerText()).includes('KEINE WÖRTER'),
+  'Akronym ohne passende Woerter sagt das in der Liste',
+);
+
+await seite.locator('#thema-methode').selectOption('coined');
+await seite.waitForTimeout(400);
+pruefe(
+  (await seite.locator('section p').first().innerText()).includes('(COINED)') &&
+    (await seite.locator('ol li button').count()) === 20,
+  'Kunstwoerter: 20 Namen, Kopfzeile nennt die Methode',
+);
+await seite.locator('#thema-methode').selectOption('words');
+
+await seite.locator('#filter-ton').selectOption('calm');
+await seite.waitForTimeout(400);
+const ruhig = new Set(
+  ['adjectives', 'verbs', 'agents'].flatMap((rolle) => zusatzDaten.en[rolle].tones.calm.map((w) => w.toUpperCase())),
+);
+const ruhigeZeilen = await zeilenOhneMarke();
+pruefe(
+  ruhigeZeilen.length === 20 && ruhigeZeilen.every((z) => z.split(/\s+/).some((w) => ruhig.has(w))),
+  `Ton RUHIG: jeder Name traegt ein ruhiges Wort (${ruhigeZeilen[0]})`,
+);
+
+await seite.locator('#filter-anfang').fill('s');
+await seite.waitForTimeout(400);
+const sZeilen = await zeilenOhneMarke();
+pruefe(
+  sZeilen.length > 0 && sZeilen.every((z) => z.startsWith('S')) &&
+    (await seite.locator('body').innerText()).includes('PASSEN'),
+  `Filter ANFANG S: ${sZeilen.length} Namen, alle mit S`,
+);
+await seite.locator('#filter-anfang').fill('');
+await seite.getByRole('button', { name: 'STABREIM', exact: true }).click();
+await seite.waitForTimeout(400);
+const stabreim = await zeilenOhneMarke();
+pruefe(
+  stabreim.length === 20 && stabreim.every((z) => new Set(z.split(/\s+/).map((w) => w[0])).size === 1),
+  `STABREIM: 20 Namen, alle gleich anlautend (${stabreim[0]})`,
+);
+await seite.getByRole('button', { name: 'STABREIM', exact: true }).click();
+await seite.getByRole('button', { name: 'NACH KLANG', exact: true }).click();
+await seite.waitForTimeout(400);
+const klangWerte = (await seite.locator('ol li .rang-marke').allInnerTexts()).map((z) => Number.parseInt(z, 10));
+pruefe(
+  klangWerte.length === 20 &&
+    klangWerte.every((w) => Number.isFinite(w)) &&
+    klangWerte.every((w, i) => i === 0 || klangWerte[i - 1] >= w),
+  `NACH KLANG: Werte absteigend (${klangWerte.slice(0, 4).join(', ')} ...)`,
+);
+await seite.getByRole('button', { name: 'ADRESSE KOPIEREN' }).click();
+await seite.waitForTimeout(300);
+const filterAdresse = await seite.evaluate(() => navigator.clipboard.readText());
+pruefe(
+  filterAdresse.includes('tone=calm') && filterAdresse.includes('sort=1'),
+  `Adresse traegt Ton und Sortierung (${filterAdresse.split('?')[1]})`,
+);
+const vorFilterLink = await seite.locator('ol li').allInnerTexts();
+await seite.goto(filterAdresse, { waitUntil: 'networkidle' });
+await held.waitFor({ timeout: 10000 });
+await seite.waitForTimeout(400);
+pruefe(
+  JSON.stringify(await seite.locator('ol li').allInnerTexts()) === JSON.stringify(vorFilterLink),
+  'Permalink mit Ton und Sortierung liefert denselben Stapel',
+);
+
+// 9i. Merkliste als Datei: EXPORT laedt eine Datei im Format der TUI herunter,
+//     IMPORT liest sie wieder ein. Beides ohne Netz - gemessen wird, dass
+//     dabei keine Anfrage die Seite verlaesst.
+await seite.goto(`${URL_BASIS}?theme=animals&lang=en&seed=4&mut=0&words=2`, { waitUntil: 'networkidle' });
+await held.waitFor({ timeout: 10000 });
+await seite.waitForTimeout(1500);
+await seite.locator('body').press('f');
+await seite.waitForTimeout(300);
+await seite.locator('ul li button').filter({ hasText: 'MERKLISTE' }).click();
+const anfragenVorher = anfragen.length;
+const [download] = await Promise.all([
+  seite.waitForEvent('download'),
+  seite.getByRole('button', { name: 'EXPORT', exact: true }).click(),
+]);
+const exportPfad = await download.path();
+const exportDaten = JSON.parse(readFileSync(exportPfad, 'utf8'));
+pruefe(
+  download.suggestedFilename() === 'codename-merkliste.json' &&
+    Array.isArray(exportDaten.favorites) &&
+    exportDaten.favorites.length === 1 &&
+    typeof exportDaten.favorites[0].source_words?.[0] === 'string',
+  `EXPORT schreibt die Merkliste im TUI-Format (${download.suggestedFilename()})`,
+);
+await seite.locator('body').press('f');
+await seite.waitForTimeout(300);
+pruefe((await seite.locator('ol li button').count()) === 0, 'Merkliste nach dem Entfernen leer');
+await seite.locator('input[type="file"]').setInputFiles(exportPfad);
+await seite.waitForTimeout(400);
+const nachImport = await messeSpuren();
+pruefe(
+  (await seite.locator('ol li button').count()) === 1 &&
+    JSON.stringify(nachImport.schluessel) === '["codename-generator.merkliste"]',
+  `IMPORT stellt die Merkliste wieder her (local ${nachImport.schluessel})`,
+);
+pruefe(
+  anfragen.slice(anfragenVorher).every((a) => a.startsWith(new URL(URL_BASIS).origin)),
+  `Export und Import schicken nichts ins Netz (${anfragen.length - anfragenVorher} Anfragen, alle lokal)`,
+);
+await seite.locator('body').press('f');
+await seite.waitForTimeout(300);
 
 await seite.goto(
   `${URL_BASIS}?word=Sitemap&lang=en&seed=9&mut=0&partner=constellations&pos=back`,

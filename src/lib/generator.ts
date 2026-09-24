@@ -6,9 +6,11 @@
  */
 import themesData from '../data/themes.json';
 import modifiersData from '../data/modifiers.json';
+import { blendPairs, coinModel, coinWords } from './coinage';
 import { GERMAN, inflectAttribute } from './grammar';
 import { mutate } from './phonetic';
 import { Rng, randomSeed, seedFromString } from './rng';
+import { NO_FILTER, type NameFilter, filterActive, matches, soundScore } from './scoring';
 
 export const RANDOM_THEME_SLUG = 'random';
 export const DEFAULT_LANGUAGE = 'en';
@@ -31,6 +33,19 @@ export type Pattern =
 /** Was beim Variieren stehen bleibt: das Themenwort oder die Zusaetze. */
 export type VariantKeep = 'word' | 'modifier';
 
+/** Wie die Namen der Themenansicht entstehen - wie Method in generator.py. */
+export type Method = 'words' | 'coined' | 'blend' | 'acronym';
+export const METHODS: Method[] = ['words', 'coined', 'blend', 'acronym'];
+
+/** Toene der Zusaetze, Reihenfolge wie in wordlist.py. */
+export const TONES = ['dark', 'bright', 'noble', 'swift', 'calm', 'fierce'] as const;
+export type Tone = (typeof TONES)[number];
+
+export const ACRONYM_MAX_LETTERS = 3;
+
+// Mit Filter faellt ein Teil der Namen weg - der Vorrat wird groesser gezogen.
+export const FILTER_POOL_FACTOR = 8;
+
 /** Wo das eigene Wort im Namen steht. */
 export type AnchorPosition = 'any' | 'front' | 'back';
 export const ANCHOR_POSITIONS: AnchorPosition[] = ['any', 'front', 'back'];
@@ -47,6 +62,8 @@ export interface WordList {
   mutate: boolean;
   defaultMutation: number | null;
   language: string;
+  // Nur bei Zusatzlisten: Ton -> Woerter dieses Tons.
+  tones?: Record<string, string[]>;
 }
 
 export interface Suggestion {
@@ -210,9 +227,52 @@ export function themeBySlug(slug: string): WordList | undefined {
   return ALL_THEMES.find((t) => t.slug === slug);
 }
 
-function modifierPool(language: string, role: string): string[] {
+/** Woerter einer Liste mit diesem Ton, in der Reihenfolge von `words`. */
+function wordsForTone(list: WordList, tone: string): string[] {
+  const tagged = list.tones?.[tone];
+  if (!tagged || tagged.length === 0) return [];
+  const wanted = new Set(tagged);
+  return list.words.filter((w) => wanted.has(w));
+}
+
+/**
+ * Woerter eines Zusatz-Pools. Ein Ton schraenkt ihn ein - traegt kein Wort
+ * den Ton, gilt der ganze Pool.
+ */
+export function modifierPool(language: string, role: string, tone = ''): string[] {
   const pools = MODIFIERS[language] ?? MODIFIERS[DEFAULT_LANGUAGE] ?? {};
-  return pools[role]?.words ?? [];
+  const list = pools[role];
+  if (!list) return [];
+  const toned = tone ? wordsForTone(list, tone) : [];
+  return toned.length > 0 ? toned : list.words;
+}
+
+/**
+ * Zusaetze fuer ein Thema: eigene Liste des Themas oder der Pool der Sprache.
+ * Eigene Listen tragen keine Toene, ein Ton filtert sie ueber den Sprach-Pool.
+ */
+function themePool(theme: WordList, language: string, role: string, tone = ''): string[] {
+  const own = role === 'adjectives' ? theme.adjectives : role === 'verbs' ? theme.verbs : [];
+  if (own.length === 0) return modifierPool(language, role, tone);
+  if (!tone) return own;
+  const tagged = new Set(modifierPool(language, role, tone));
+  const filtered = own.filter((w) => tagged.has(w));
+  return filtered.length > 0 ? filtered : own;
+}
+
+/** Woerter mit dem Anfangsbuchstaben von `word` - ohne Treffer der ganze Pool. */
+export function sameInitial(pool: string[], word: string): string[] {
+  const initial = [...word][0]?.toLowerCase() ?? '';
+  const found = pool.filter((w) => ([...w][0]?.toLowerCase() ?? '') === initial);
+  return found.length > 0 ? found : pool;
+}
+
+/** Akronym-Eingabe bereinigen: nur Buchstaben, klein, hoechstens drei. */
+export function normalizeLetters(raw: string): string {
+  return [...raw.toLowerCase()]
+    .filter((ch) => /\p{L}/u.test(ch))
+    .slice(0, ACRONYM_MAX_LETTERS)
+    .join('');
 }
 
 function genderOf(theme: WordList, word: string): string {
@@ -242,12 +302,24 @@ function selectPattern(
   return threeWordPattern(lang);
 }
 
-/** Erzeugt `count` Rezepte - jedes Theme-Wort hoechstens einmal. */
-function generateRecipes(theme: WordList, count: number, language: string, rng: Rng): Recipe[] {
+/**
+ * Erzeugt `count` Rezepte - jedes Theme-Wort hoechstens einmal. `alliterate`
+ * zieht die Zusaetze bevorzugt mit dem Anfangsbuchstaben des Themenworts.
+ * Ohne Ton und Alliteration bleibt die Zugfolge die alte (Permalinks).
+ */
+function generateRecipes(
+  theme: WordList,
+  count: number,
+  language: string,
+  rng: Rng,
+  tone = '',
+  alliterate = false,
+): Recipe[] {
   const lang = effectiveLanguage(theme, language);
-  const adjectives = theme.adjectives.length > 0 ? theme.adjectives : modifierPool(lang, 'adjectives');
-  const verbs = theme.verbs.length > 0 ? theme.verbs : modifierPool(lang, 'verbs');
-  const agents = modifierPool(lang, 'agents');
+  const adjectives = themePool(theme, lang, 'adjectives', tone);
+  const verbs = themePool(theme, lang, 'verbs', tone);
+  const agents = modifierPool(lang, 'agents', tone);
+  const pick = (pool: string[], word: string) => rng.choice(alliterate ? sameInitial(pool, word) : pool);
   const patternChoices = twoWordPatterns(lang).length;
 
   const recipes: Recipe[] = [];
@@ -260,9 +332,9 @@ function generateRecipes(theme: WordList, count: number, language: string, rng: 
     seen.add(key);
     recipes.push({
       themeWord,
-      adjective: adjectives.length > 0 ? rng.choice(adjectives) : '',
-      verb: verbs.length > 0 ? rng.choice(verbs) : '',
-      agent: agents.length > 0 ? rng.choice(agents) : '',
+      adjective: adjectives.length > 0 ? pick(adjectives, themeWord) : '',
+      verb: verbs.length > 0 ? pick(verbs, themeWord) : '',
+      agent: agents.length > 0 ? pick(agents, themeWord) : '',
       patternIndex: rng.range(patternChoices),
       mutationRoll: rng.random(),
       mutationSeed: rng.range(0x7fffffff),
@@ -351,10 +423,21 @@ export function render(
   return { name: titleCase(name), slug: slugify(name), pattern, mutated, sourceWords: sources };
 }
 
-export interface SuggestOptions {
+/** Darstellung eines Stapels: Filter und Sortierung nach Klangwert. */
+export interface Darstellung {
+  filter?: NameFilter;
+  sortByScore?: boolean;
+}
+
+export interface SuggestOptions extends Darstellung {
   themeSlug: string;
-  // Themen-Mix: Slug eines zweiten Themas, je ein Wort aus beiden.
+  // Themen-Mix: Slug eines zweiten Themas, je ein Wort aus beiden. Bei
+  // Kunstwoertern lernt das Modell auch daraus, bei Kofferwoertern kommt die
+  // hintere Haelfte daher.
   mix?: string;
+  method?: Method;
+  letters?: string;
+  tone?: string;
   count?: number;
   mutationChance?: number;
   wordCount?: number;
@@ -366,9 +449,82 @@ export interface SuggestOptions {
 export interface Stapel {
   suggestions: Suggestion[];
   seed: number;
-  // Rezepte und Thema zum Stapel - daraus entstehen Varianten eines Treffers.
+  // Rezepte in der angezeigten Reihenfolge und das Thema - daraus entstehen
+  // die Varianten eines Treffers.
   recipes: Recipe[];
   theme: WordList | null;
+  // Klangwert je angezeigtem Namen.
+  scores: number[];
+}
+
+/** Vorrat fuer einen Stapel - mit Filter groesser, damit die Liste voll wird. */
+function poolCount(count: number, filter: NameFilter): number {
+  return filterActive(filter) ? count * FILTER_POOL_FACTOR : count;
+}
+
+/**
+ * Rendert Rezepte und wendet Filter, Sortierung und Anzahl an. Jeder Name
+ * behaelt sein Rezept - Variieren trifft so auch nach dem Sortieren richtig.
+ */
+function present(
+  recipes: Recipe[],
+  theme: WordList,
+  wordCount: number,
+  mutationChance: number,
+  language: string,
+  darstellung: Darstellung,
+  limit: number,
+  seed: number,
+): Stapel {
+  const filter = darstellung.filter ?? NO_FILTER;
+  const lang = effectiveLanguage(theme, language);
+  let items = recipes.map((recipe) => {
+    const suggestion = render(recipe, theme, wordCount, mutationChance, language);
+    return { recipe, suggestion, score: soundScore(suggestion.name, lang) };
+  });
+  if (filterActive(filter)) items = items.filter((item) => matches(item.suggestion.name, filter, lang));
+  if (darstellung.sortByScore) items = [...items].sort((a, b) => b.score - a.score);
+  items = items.slice(0, limit);
+  return {
+    suggestions: items.map((i) => i.suggestion),
+    recipes: items.map((i) => i.recipe),
+    scores: items.map((i) => i.score),
+    theme,
+    seed,
+  };
+}
+
+/** Das (virtuelle) Thema und seine Rezepte fuer Methode, Mix und Ton - wie build_stack. */
+function buildStack(
+  base: WordList,
+  partner: WordList | undefined,
+  method: Method,
+  letters: string,
+  tone: string,
+  alliterate: boolean,
+  count: number,
+  language: string,
+  rng: Rng,
+): { theme: WordList; recipes: Recipe[] } {
+  if (method === 'coined') {
+    const theme = coinedTheme(base, count, language, rng, partner);
+    return { theme, recipes: generateRecipes(theme, count, language, rng, tone, alliterate) };
+  }
+  if (method === 'blend') {
+    const theme = blendedTheme(base, partner ?? base, count, language, rng);
+    return { theme, recipes: generateRecipes(theme, count, language, rng, tone, alliterate) };
+  }
+  if (method === 'acronym') {
+    const theme = acronymTheme(base, letters, language, tone);
+    return { theme, recipes: generateAcronymRecipes(theme, base, letters, count, tone, rng) };
+  }
+  if (partner) {
+    return {
+      theme: crossedTheme(base, partner, language),
+      recipes: generateCrossedRecipes(base, partner, count, rng),
+    };
+  }
+  return { theme: base, recipes: generateRecipes(base, count, language, rng, tone, alliterate) };
 }
 
 export function suggest(options: SuggestOptions): Stapel {
@@ -380,23 +536,189 @@ export function suggest(options: SuggestOptions): Stapel {
     language = DEFAULT_LANGUAGE,
     seed = randomSeed(),
     mix,
+    method = 'words',
+    letters = '',
+    tone = '',
   } = options;
 
   const base = themeBySlug(themeSlug);
   if (!base) throw new Error(`Unknown theme: ${themeSlug}`);
-  const second = mix && mix !== themeSlug ? themeBySlug(mix) : undefined;
-  const theme = second ? crossedTheme(base, second, language) : base;
+  const partner = mix && mix !== themeSlug && method !== 'acronym' ? themeBySlug(mix) : undefined;
+  const filter = options.filter ?? NO_FILTER;
+  const stack = buildStack(
+    base,
+    partner,
+    method,
+    letters,
+    tone,
+    filter.alliteration,
+    poolCount(count, filter),
+    language,
+    new Rng(seed),
+  );
+  return present(stack.recipes, stack.theme, wordCount, mutationChance, language, options, count, seed);
+}
 
-  const rng = new Rng(seed);
-  const recipes = second
-    ? generateCrossedRecipes(base, second, count, rng)
-    : generateRecipes(base, count, language, rng);
+/** Virtuelles Thema aus Kunstwoertern im Klang von `theme` (und `partner`). */
+export function coinedTheme(
+  theme: WordList,
+  count: number,
+  language: string,
+  rng: Rng,
+  partner?: WordList,
+): WordList {
+  const words = coinWords(coinModel([...theme.words, ...(partner?.words ?? [])]), rng, count);
+  const name = partner ? `${theme.name} x ${partner.name}` : theme.name;
   return {
-    suggestions: recipes.map((r) => render(r, theme, wordCount, mutationChance, language)),
-    seed,
-    recipes,
-    theme,
+    slug: `coined-${theme.slug}${partner ? `-${partner.slug}` : ''}`,
+    name: `${name} (coined)`,
+    description: `new words that sound like ${name}`,
+    words,
+    genders: [],
+    adjectives: [],
+    verbs: [],
+    patterns: [],
+    mutate: false,
+    defaultMutation: null,
+    language: effectiveLanguage(theme, language),
   };
+}
+
+/** Virtuelles Thema aus Kofferwoertern, Genus und Sprache vom hinteren Wort. */
+export function blendedTheme(
+  first: WordList,
+  second: WordList,
+  count: number,
+  language: string,
+  rng: Rng,
+): WordList {
+  const pairs = blendPairs(first.words, second.words, rng, count);
+  const genders = pairs.map(([, b]) => genderOf(second, b));
+  const name = first.slug === second.slug ? first.name : `${first.name} x ${second.name}`;
+  return {
+    slug: `blend-${first.slug}-${second.slug}`,
+    name: `${name} (blends)`,
+    description: `two words of ${name} melted into one`,
+    words: pairs.map(([, , word]) => word),
+    genders: genders.some(Boolean) ? genders : [],
+    adjectives: [],
+    verbs: [],
+    patterns: [],
+    mutate: false,
+    defaultMutation: null,
+    language: effectiveLanguage(second, language),
+  };
+}
+
+// Welche Rolle an welcher Stelle eines Patterns steht - fuer das Akronym.
+const PATTERN_ROLES: Partial<Record<Pattern, string[]>> = {
+  theme: ['theme'],
+  'adj-theme': ['adjective', 'theme'],
+  'verb-theme': ['verb', 'theme'],
+  'theme-verb': ['theme', 'verb'],
+  'theme-agent': ['theme', 'agent'],
+  'adj-theme-verb': ['adjective', 'theme', 'verb'],
+  'adj-verb-theme': ['adjective', 'verb', 'theme'],
+};
+
+function startsWith(word: string, letter: string): boolean {
+  return ([...word][0]?.toLowerCase() ?? '') === letter;
+}
+
+/** Woerter fuer eine Stelle des Akronyms - ohne Treffer im Ton der ganze Pool. */
+function acronymCandidates(
+  role: string,
+  themeWords: string[],
+  theme: WordList,
+  language: string,
+  tone: string,
+  letter: string,
+): string[] {
+  let pools: string[][];
+  if (role === 'theme') pools = [themeWords];
+  else if (role === 'agent') pools = [modifierPool(language, 'agents', tone), modifierPool(language, 'agents')];
+  else pools = [themePool(theme, language, `${role}s`, tone), themePool(theme, language, `${role}s`)];
+  for (const pool of pools) {
+    const found = pool.filter((w) => startsWith(w, letter));
+    if (found.length > 0) return found;
+  }
+  return [];
+}
+
+function acronymPatterns(
+  theme: WordList,
+  themeWords: string[],
+  letters: string,
+  language: string,
+  tone: string,
+): Pattern[] {
+  const chars = [...letters];
+  if (chars.length === 0) return [];
+  const candidates: Pattern[] =
+    chars.length === 1 ? ['theme'] : chars.length === 2 ? twoWordPatterns(language) : [threeWordPattern(language)];
+  return candidates.filter((pattern) =>
+    (PATTERN_ROLES[pattern] ?? []).every(
+      (role, k) => acronymCandidates(role, themeWords, theme, language, tone, chars[k]).length > 0,
+    ),
+  );
+}
+
+/** Virtuelles Thema fuer ein Akronym: einteilige Woerter, feste Patterns. */
+export function acronymTheme(theme: WordList, rawLetters: string, language: string, tone = ''): WordList {
+  const lang = effectiveLanguage(theme, language);
+  const letters = normalizeLetters(rawLetters);
+  const single = theme.words.filter((w) => w.split(/\s+/).length === 1);
+  const genders = single.map((w) => genderOf(theme, w));
+  return {
+    slug: `acronym-${theme.slug}`,
+    name: `${theme.name}: ${letters.toUpperCase()}`,
+    description: `names whose words start with ${[...letters.toUpperCase()].join(', ')}`,
+    words: single,
+    genders: genders.some(Boolean) ? genders : [],
+    adjectives: [],
+    verbs: [],
+    patterns: acronymPatterns(theme, single, letters, lang, tone),
+    mutate: false,
+    defaultMutation: null,
+    language: lang,
+  };
+}
+
+/** Rezepte fuer ein Akronym, jede Stelle mit ihrem Buchstaben, ohne doppelte Namen. */
+function generateAcronymRecipes(
+  acronym: WordList,
+  source: WordList,
+  rawLetters: string,
+  count: number,
+  tone: string,
+  rng: Rng,
+): Recipe[] {
+  const chars = [...normalizeLetters(rawLetters)];
+  const patterns = acronym.patterns.filter((p): p is Pattern => p in PATTERN_WORD_COUNT);
+  const recipes: Recipe[] = [];
+  const seen = new Set<string>();
+  const maxAttempts = count * 40;
+  for (let attempt = 0; patterns.length > 0 && recipes.length < count && attempt < maxAttempts; attempt += 1) {
+    const index = rng.range(patterns.length);
+    const roles = PATTERN_ROLES[patterns[index]] ?? [];
+    const chosen: Record<string, string> = { theme: '', adjective: '', verb: '', agent: '' };
+    roles.forEach((role, k) => {
+      chosen[role] = rng.choice(acronymCandidates(role, acronym.words, source, acronym.language, tone, chars[k]));
+    });
+    const key = [patterns[index], ...roles.map((role) => chosen[role].toLowerCase())].join('|');
+    if (seen.has(key)) continue;
+    seen.add(key);
+    recipes.push({
+      themeWord: chosen.theme,
+      adjective: chosen.adjective,
+      verb: chosen.verb,
+      agent: chosen.agent,
+      patternIndex: index,
+      mutationRoll: rng.random(),
+      mutationSeed: rng.range(0x7fffffff),
+    });
+  }
+  return recipes;
 }
 
 /** Setzt einen Namen aus Pattern, Themenwort und (schon gebeugten) Modifiern zusammen. */
@@ -494,14 +816,20 @@ function generateSeededRecipes(
   language: string,
   position: AnchorPosition,
   rng: Rng,
+  tone = '',
+  alliterate = false,
 ): Recipe[] {
+  const pool = (role: string) => {
+    const words = modifierPool(language, role, tone);
+    return alliterate ? sameInitial(words, word) : words;
+  };
   return modifierRecipes(
     word,
     count,
     anchorModifierPatterns(language, position),
-    modifierPool(language, 'adjectives'),
-    modifierPool(language, 'verbs'),
-    modifierPool(language, 'agents'),
+    pool('adjectives'),
+    pool('verbs'),
+    pool('agents'),
     rng,
   );
 }
@@ -621,6 +949,7 @@ export function generateVariantRecipes(
   count: number,
   language: string,
   rng: Rng,
+  tone = '',
 ): Recipe[] {
   if (keep === 'modifier') return variantThemeWords(base, theme, count, rng);
   // Bei einem Anker-Treffer wuerden neue Zusaetze den Anker verdraengen.
@@ -633,9 +962,9 @@ export function generateVariantRecipes(
     base.themeWord,
     count,
     declared.length > 0 ? declared : twoWordPatterns(lang),
-    theme.adjectives.length > 0 ? theme.adjectives : modifierPool(lang, 'adjectives'),
-    theme.verbs.length > 0 ? theme.verbs : modifierPool(lang, 'verbs'),
-    modifierPool(lang, 'agents'),
+    themePool(theme, lang, 'adjectives', tone),
+    themePool(theme, lang, 'verbs', tone),
+    modifierPool(lang, 'agents', tone),
     rng,
     base,
   );
@@ -666,10 +995,11 @@ function variantThemeWords(base: Recipe, theme: WordList, count: number, rng: Rn
   return recipes;
 }
 
-export interface VariantOptions {
+export interface VariantOptions extends Darstellung {
   base: Recipe;
   theme: WordList;
   keep: VariantKeep;
+  tone?: string;
   count?: number;
   mutationChance?: number;
   wordCount?: number;
@@ -688,14 +1018,11 @@ export function suggestVariants(options: VariantOptions): Stapel {
     wordCount = 2,
     language = DEFAULT_LANGUAGE,
     seed = randomSeed(),
+    tone = '',
   } = options;
-  const recipes = generateVariantRecipes(base, theme, keep, count, language, new Rng(seed));
-  return {
-    suggestions: recipes.map((r) => render(r, theme, wordCount, mutationChance, language)),
-    seed,
-    recipes,
-    theme,
-  };
+  const pool = poolCount(count, options.filter ?? NO_FILTER);
+  const recipes = generateVariantRecipes(base, theme, keep, pool, language, new Rng(seed), tone);
+  return present(recipes, theme, wordCount, mutationChance, language, options, count, seed);
 }
 
 /**
@@ -749,8 +1076,9 @@ function generateCrossedRecipes(first: WordList, second: WordList, count: number
   return recipes;
 }
 
-export interface SeededOptions {
+export interface SeededOptions extends Darstellung {
   word: string;
+  tone?: string;
   // Partner-Thema (Slug). Ohne Partner kommen Adjektive und Verben dazu.
   partner?: string;
   position?: AnchorPosition;
@@ -772,21 +1100,19 @@ export function suggestSeeded(options: SeededOptions): Stapel {
     seed = randomSeed(),
     partner,
     position = 'any',
+    tone = '',
   } = options;
   const trimmed = word.trim();
-  if (!trimmed) return { suggestions: [], seed, recipes: [], theme: null };
+  if (!trimmed) return { suggestions: [], seed, recipes: [], theme: null, scores: [] };
+  const filter = options.filter ?? NO_FILTER;
+  const pool = poolCount(count, filter);
   const partnerTheme = partner ? themeBySlug(partner) : undefined;
   const theme = partnerTheme
     ? anchoredTheme(trimmed, partnerTheme, language, position)
     : seededTheme(trimmed, language, position);
   const rng = new Rng(seed);
   const recipes = partnerTheme
-    ? generateAnchoredRecipes(trimmed, partnerTheme, count, position, rng)
-    : generateSeededRecipes(trimmed, count, language, position, rng);
-  return {
-    suggestions: recipes.map((r) => render(r, theme, wordCount, mutationChance, language)),
-    seed,
-    recipes,
-    theme,
-  };
+    ? generateAnchoredRecipes(trimmed, partnerTheme, pool, position, rng)
+    : generateSeededRecipes(trimmed, pool, language, position, rng, tone, filter.alliteration);
+  return present(recipes, theme, wordCount, mutationChance, language, options, count, seed);
 }

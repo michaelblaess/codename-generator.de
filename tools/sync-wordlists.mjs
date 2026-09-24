@@ -50,6 +50,8 @@ function leseListe(pfad, sprache) {
     mutate: daten.mutate ?? true,
     defaultMutation: typeof daten.default_mutation === 'number' ? daten.default_mutation : null,
     language: String(daten.language ?? sprache ?? 'en'),
+    // Nur die Zusatzlisten tragen Toene - die Themes bleiben ohne das Feld.
+    ...(daten.tones ? { tones: daten.tones } : {}),
   };
 }
 

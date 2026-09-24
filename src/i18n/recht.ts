@@ -27,8 +27,8 @@ export interface Rechtstext {
 
 const ANSCHRIFT = ['Michael Blaess', 'Kurze Str. 2', '15345 Rehfelde', 'Deutschland'];
 const MAIL = 'mail@michaelblaess.de';
-const STAND_DE = 'Stand: 23.09.2026';
-const STAND_EN = 'Last updated: 23 September 2026';
+const STAND_DE = 'Stand: 24.09.2026';
+const STAND_EN = 'Last updated: 24 September 2026';
 
 export const IMPRESSUM: Record<UiSprache, Rechtstext> = {
   de: {
@@ -140,7 +140,7 @@ export const DATENSCHUTZ: Record<UiSprache, Rechtstext> = {
       {
         titel: 'Kurz gefasst',
         zeilen: [
-          'Diese Seite setzt keine Cookies, speichert nichts im Browser und bindet keine Zählpixel, Analysedienste oder sozialen Netzwerke ein. Der Generator läuft vollständig in deinem Browser: die Wortlisten liegen in der Seite, es wird nichts an einen Server gesendet. Auch die Schriften liegen lokal im Auslieferpaket, es wird keine Schrift von einem fremden Server geladen.',
+          'Diese Seite setzt keine Cookies, speichert im Browser nur die Merkliste, die du selbst anlegst, und bindet keine Zählpixel, Analysedienste oder sozialen Netzwerke ein. Der Generator läuft vollständig in deinem Browser: die Wortlisten liegen in der Seite, es wird nichts an einen Server gesendet. Auch die Schriften liegen lokal im Auslieferpaket, es wird keine Schrift von einem fremden Server geladen.',
         ],
       },
       {
@@ -162,6 +162,7 @@ export const DATENSCHUTZ: Record<UiSprache, Rechtstext> = {
           'Es werden keine Cookies gesetzt, weder technisch notwendige noch andere. Es findet keine Reichweitenmessung statt: kein Google Analytics, kein Matomo, kein Zählpixel.',
           'Wenn du einen Namen merkst oder eine eigene Idee auf die Merkliste setzt, legt die Seite diese Liste im localStorage deines Browsers ab, unter dem Schlüssel codename-generator.merkliste. Gespeichert werden nur die gemerkten Namen und ihre Bestandteile. Die Liste bleibt in deinem Browser, sie wird an keinen Server übertragen, und ich kann sie nicht einsehen. Sonst legt die Seite nichts im Browser ab, auch nicht im sessionStorage.',
           'Vor dem ersten Merken wird nichts gespeichert. Entfernst du den letzten Eintrag, verschwindet auch der Schlüssel wieder. Außerdem kannst du die Liste jederzeit über die Einstellungen deines Browsers löschen (gespeicherte Websitedaten).',
+          'Die Merkliste lässt sich als Datei exportieren und aus einer Datei importieren. Beides geschieht nur in deinem Browser: Die Exportdatei wird dort erzeugt und landet in deinem Download-Ordner, eine Importdatei wird dort gelesen. Keine der beiden Dateien wird an einen Server übertragen.',
           'Eine Einwilligung ist dafür nicht nötig: Die Speicherung ist unbedingt erforderlich, damit die von dir ausdrücklich gewünschte Merkliste funktioniert (§ 25 Abs. 2 Nr. 2 TDDDG). Deshalb gibt es hier auch keinen Einwilligungsbanner.',
           'Die eingestellte Sprache und ein geteilter Stapel Namen stehen in der Adresse selbst, nicht in einem Speicher deines Browsers.',
           'Die Hintergrundmusik wird erst nach einem Klick auf den Musikknopf geladen, und zwar von demselben Server wie die Seite. Es wird dabei kein fremder Dienst kontaktiert.',
@@ -190,7 +191,7 @@ export const DATENSCHUTZ: Record<UiSprache, Rechtstext> = {
       {
         titel: 'In short',
         zeilen: [
-          'This site sets no cookies, stores nothing in your browser, and embeds no tracking pixels, analytics services or social networks. The generator runs entirely in your browser: the word lists ship with the page and nothing is sent to a server. The typefaces are bundled locally as well, so no font is fetched from a third-party server.',
+          'This site sets no cookies, stores only the shortlist you create yourself in your browser, and embeds no tracking pixels, analytics services or social networks. The generator runs entirely in your browser: the word lists ship with the page and nothing is sent to a server. The typefaces are bundled locally as well, so no font is fetched from a third-party server.',
         ],
       },
       {
@@ -212,6 +213,7 @@ export const DATENSCHUTZ: Record<UiSprache, Rechtstext> = {
           'No cookies are set, neither strictly necessary ones nor any others. There is no audience measurement: no Google Analytics, no Matomo, no tracking pixel.',
           'When you keep a name or put an idea of your own on the shortlist, the page stores that list in the localStorage of your browser, under the key codename-generator.merkliste. Only the kept names and their parts are stored. The list stays in your browser, it is not sent to any server, and I cannot see it. Apart from that the page stores nothing in your browser, not in sessionStorage either.',
           'Nothing is stored before you keep your first name. When you remove the last entry, the key disappears again. You can also delete the list at any time in your browser settings (stored site data).',
+          'The shortlist can be exported to a file and imported from a file. Both happen in your browser only: the export file is created there and goes to your download folder, an import file is read there. Neither file is sent to any server.',
           'No consent is needed for this: the storage is strictly necessary to provide the shortlist you explicitly asked for (Section 25(2) no. 2 of the German Telecommunications Digital Services Data Protection Act, TDDDG). That is also why there is no consent banner here.',
           'The chosen language and a shared batch of names live in the address itself, not in the storage of your browser.',
           'The background music is only fetched after you press the music button, and it comes from the same server as the page. No third-party service is contacted.',

@@ -37,7 +37,17 @@ tracking, nothing leaves the page.
   directly.
 - **Theme mix** (MIX above the list, address `?theme=whisky&mix=constellations`): the theme
   is crossed with a second one, every name takes one word from each (`Rigel
-  Andromeda`). No word appears twice in a batch.
+  Andromeda`). No word appears twice in a batch. Themes of the other language work too.
+- **Methods** (METHOD above the list): *theme words* is the classic way. *Coined words*
+  invents new words that sound like the theme, *blends* melt two theme words at a shared
+  letter (`Orion` + `Taurus` = `Orisker`), with a mix the back half comes from the second
+  theme. *Acronym* takes up to three letters, every word starts with its letter (`SM` ->
+  `Stork Maker`). Address: `?method=acronym&letters=sm`.
+- **Tone and filters** (row above the list): TONE limits the modifiers to one mood (dark,
+  bright, noble, swift, calm, fierce). STARTS, MAX SYLLABLES and ALLITERATION filter the
+  names, a larger pool is drawn so the list stays full. BY SOUND sorts by a score from 0 to
+  100 (short, easy to say and to spell) and shows it next to each name. Everything goes
+  into the permalink.
 - **Varying** (keys `w` and `m`): `w` keeps the word of the big name and rolls new
   modifiers, `m` keeps the modifier and swaps the word - `Jump Pangolin` becomes
   `Magenta Pangolin`, then `Magenta Sloth`. From a variant you can go on, `F1` rolls new
@@ -45,7 +55,9 @@ tracking, nothing leaves the page.
 - **Shortlist** (key `f` keeps a name, `v` shows the list): kept names stay in your
   browser, and the mutation slider still applies to them. `+` adds ideas of your own,
   `Copy list` puts all names on the clipboard, one per line. The storage format is the one
-  the TUI uses for its favorites.
+  the TUI uses for its favorites: `EXPORT` saves the list as a file the TUI reads with
+  `--import-favorites`, `IMPORT` takes a file from the TUI (`--export-favorites`, or its
+  `settings.json` directly). Both happen in the browser, nothing is uploaded.
 - **Permalinks.** Every batch has a seed - the `Link` button copies a URL that reproduces
   exactly that batch.
 - **Two interface languages.** German lives at `/`, English at `/en/`, both built from
@@ -69,7 +81,8 @@ npm run dev
 **Content changes always affect both editions.** New themes, new words or a grammar rule
 belong in the Python repo first, then get synced here. `npm run daten:pruefen` runs the sync
 and fails as soon as the JSON files differ from the Python state - the guard against
-forgetting to pull them across.
+forgetting to pull them across. CI runs the same check against a fresh checkout of the
+Python repo.
 
 **Shared test vectors.** The core exists twice, in Python and in TypeScript. To keep both
 computing the same, the test cases for everything deterministic (slug, title case,
@@ -103,6 +116,9 @@ The smoketest needs a headless Chromium once:
 src/lib/generator.ts   name assembly, patterns, themes  (port of generator.py)
 src/lib/grammar.ts     German inflection                (port of grammar.py)
 src/lib/phonetic.ts    phonetic mutation                (port of phonetic.py)
+src/lib/coinage.ts     coined words and blends         (port of coinage.py)
+src/lib/scoring.ts     syllables, sound score, filters  (port of scoring.py)
+src/lib/merkliste.ts   shortlist in localStorage, export/import
 src/lib/rng.ts         seedable RNG (mulberry32)
 src/data/*.json        generated, do not edit
 ```
@@ -114,16 +130,18 @@ Within this site seeds are stable, which is what permalinks need.
 ## Design
 
 The current look follows **Goldrunner** (Atari ST, 1987): black ground, gold, magenta
-and green, copper bars along the top edge. The whole page fits one screen - the lists
-scroll inside their boxes, the page itself does not.
+and green, copper bars along the top edge. On a desktop the whole page fits one screen -
+the lists scroll inside their boxes, the page itself does not. Below 1024 px the page
+scrolls instead, so the lists keep their height on a phone.
 
 The earlier C64 look with rainbow copper bars is kept as a fallback and can be checked
 out at the tag `design-c64-copperbars`.
 
 ## Deployment
 
-Every push to `main` runs the tests, builds and deploys to GitHub Pages. `public/CNAME`
-points at the production domain.
+Every push to `main` checks the data against the Python repo, runs the tests and builds.
+Deploying to GitHub Pages is started by hand (`workflow_dispatch`) until Pages is switched
+on for the repository. `public/CNAME` points at the production domain.
 
 ## Credits
 

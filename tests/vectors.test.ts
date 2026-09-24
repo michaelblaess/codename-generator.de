@@ -7,10 +7,15 @@
  */
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { blend, coinModel, coinTokens, coinWord } from '../src/lib/coinage';
 import {
+  acronymTheme,
   anchorModifierPatterns,
   anchorThemePatterns,
+  modifierPool,
+  normalizeLetters,
   render,
+  themeBySlug,
   renderFavorite,
   slugify,
   titleCase,
@@ -22,6 +27,7 @@ import {
 import { inflectAttribute } from '../src/lib/grammar';
 import { mutate } from '../src/lib/phonetic';
 import type { RandomSource } from '../src/lib/rng';
+import { matches, nameSyllables, soundScore } from '../src/lib/scoring';
 
 interface RenderCase {
   _note: string;
@@ -53,6 +59,20 @@ interface Vectors {
     position: AnchorPosition;
     expected: string[];
   }>;
+  coin: Array<{ _note: string; words: string[]; script: number[]; expected: string | null }>;
+  coin_tokens: Array<{ _note: string; words: string[]; expected: string[] }>;
+  blend: Array<{ first: string; second: string; expected: string | null }>;
+  syllables: Array<{ name: string; language: string; expected: number }>;
+  score: Array<{ name: string; language: string; expected: number }>;
+  filter: Array<{
+    name: string;
+    filter: { initial?: string; max_syllables?: number; alliteration?: boolean };
+    language: string;
+    expected: boolean;
+  }>;
+  letters: Array<{ input: string; expected: string }>;
+  tone_pool: Array<{ language: string; role: string; tone: string; expected: string[] }>;
+  acronym_patterns: Array<{ theme: string; letters: string; language: string; tone: string; expected: string[] }>;
 }
 
 const vectors = JSON.parse(
@@ -165,5 +185,66 @@ describe('Vektoren: anchor_patterns', () => {
     const patterns =
       kind === 'modifier' ? anchorModifierPatterns(language, position) : anchorThemePatterns(position);
     expect(patterns).toEqual(expected);
+  });
+});
+
+describe('Vektoren: coin', () => {
+  it.each(vectors.coin)('$_note', ({ words, script, expected }) => {
+    expect(coinWord(coinModel(words), new ScriptedRandom(script))).toBe(expected);
+  });
+});
+
+describe('Vektoren: coin_tokens', () => {
+  it.each(vectors.coin_tokens)('$_note', ({ words, expected }) => {
+    expect(coinTokens(words)).toEqual(expected);
+  });
+});
+
+describe('Vektoren: blend', () => {
+  it.each(vectors.blend)('$first + $second', ({ first, second, expected }) => {
+    expect(blend(first, second)).toBe(expected);
+  });
+});
+
+describe('Vektoren: syllables', () => {
+  it.each(vectors.syllables)('$name/$language', ({ name, language, expected }) => {
+    expect(nameSyllables(name, language)).toBe(expected);
+  });
+});
+
+describe('Vektoren: score', () => {
+  it.each(vectors.score)('$name/$language', ({ name, language, expected }) => {
+    expect(soundScore(name, language)).toBe(expected);
+  });
+});
+
+describe('Vektoren: filter', () => {
+  it.each(vectors.filter)('$name $filter', ({ name, filter, language, expected }) => {
+    const nameFilter = {
+      initial: filter.initial ?? '',
+      maxSyllables: filter.max_syllables ?? 0,
+      alliteration: filter.alliteration ?? false,
+    };
+    expect(matches(name, nameFilter, language)).toBe(expected);
+  });
+});
+
+describe('Vektoren: letters', () => {
+  it.each(vectors.letters)('$input', ({ input, expected }) => {
+    expect(normalizeLetters(input)).toBe(expected);
+  });
+});
+
+describe('Vektoren: tone_pool', () => {
+  it.each(vectors.tone_pool)('$language/$role/$tone', ({ language, role, tone, expected }) => {
+    expect(modifierPool(language, role, tone)).toEqual(expected);
+  });
+});
+
+describe('Vektoren: acronym_patterns', () => {
+  it.each(vectors.acronym_patterns)('$theme $letters $tone', ({ theme: slug, letters, language, tone, expected }) => {
+    const source = themeBySlug(slug);
+    expect(source).toBeDefined();
+    expect(acronymTheme(source as WordList, letters, language, tone).patterns).toEqual(expected);
   });
 });

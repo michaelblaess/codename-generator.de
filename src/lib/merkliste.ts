@@ -75,6 +75,54 @@ export function speichereMerkliste(liste: Suggestion[]): boolean {
   }
 }
 
+function alsEintrag(s: Suggestion): Eintrag {
+  return { name: s.name, slug: s.slug, pattern: s.pattern, mutated: s.mutated, source_words: s.sourceWords };
+}
+
+/**
+ * Die Merkliste als Austauschdatei - dasselbe Dokument, das die TUI mit
+ * --export-favorites schreibt: die Liste unter "favorites".
+ */
+export function exportDokument(liste: Suggestion[]): string {
+  return `${JSON.stringify({ favorites: liste.map(alsEintrag) }, null, 2)}\n`;
+}
+
+/**
+ * Liest eine Austauschdatei: ein Web-Export, ein TUI-Export oder gleich die
+ * settings.json der TUI. Unbrauchbare Eintraege fallen weg. Kaputtes JSON
+ * wirft - das ist ein Fehler, kein leerer Import.
+ */
+export function leseImport(text: string): Suggestion[] {
+  const daten: unknown = JSON.parse(text);
+  const roh =
+    typeof daten === 'object' && daten !== null && !Array.isArray(daten)
+      ? (daten as Record<string, unknown>).favorites
+      : daten;
+  if (!Array.isArray(roh)) return [];
+  return roh.filter(istEintrag).map((e) => ({
+    name: e.name,
+    slug: e.slug,
+    pattern: e.pattern as Pattern,
+    mutated: Boolean(e.mutated),
+    sourceWords: [...e.source_words],
+  }));
+}
+
+/** Haengt neue Eintraege an, ein bekannter Slug bleibt einmal. Liefert die Liste und die Zahl der neuen. */
+export function fuehreZusammen(
+  bestehend: Suggestion[],
+  neu: Suggestion[],
+): { liste: Suggestion[]; hinzu: number } {
+  const slugs = new Set(bestehend.map((s) => s.slug));
+  const liste = [...bestehend];
+  for (const eintrag of neu) {
+    if (slugs.has(eintrag.slug)) continue;
+    slugs.add(eintrag.slug);
+    liste.push(eintrag);
+  }
+  return { liste, hinzu: liste.length - bestehend.length };
+}
+
 /** Eine eigene Idee als gemerkten Namen - ein Stueck, ohne Modifier (wie "+" in der TUI). */
 export function eigeneIdee(text: string): Suggestion | null {
   const name = text.trim().replace(/\s+/g, ' ');

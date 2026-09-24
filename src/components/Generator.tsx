@@ -5,26 +5,43 @@ import {
   type AnchorPosition,
   DEFAULT_LANGUAGE,
   LANGUAGES,
+  METHODS,
+  type Method,
+  RANDOM_THEME_SLUG,
   type Recipe,
   type Stapel,
   type Suggestion,
+  TONES,
+  type Tone,
   type VariantKeep,
   type WordList,
+  normalizeLetters,
   renderFavorite,
   suggest,
   suggestSeeded,
   suggestVariants,
   themeBySlug,
+  themes,
   visibleThemes,
 } from '../lib/generator';
-import { eigeneIdee, ladeMerkliste, speichereMerkliste } from '../lib/merkliste';
+import {
+  eigeneIdee,
+  exportDokument,
+  fuehreZusammen,
+  ladeMerkliste,
+  leseImport,
+  speichereMerkliste,
+} from '../lib/merkliste';
 import { randomSeed } from '../lib/rng';
+import { type NameFilter, filterActive } from '../lib/scoring';
 import { UI, type UiSprache } from '../i18n/ui';
 import Musik from './Musik';
 
 const LANGUAGE_LABELS: Record<string, string> = { en: 'ENGLISH', de: 'DEUTSCH' };
 const COUNTS = [10, 20, 30, 40];
 const WORDS = [1, 2, 3];
+// Silbengrenze: 0 = alle.
+const SILBEN = [0, 2, 3, 4, 5];
 
 // Was rechts in der Liste steht: ein Thema, das eigene Wort oder die Merkliste.
 // Dieselbe Aufteilung wie in der TUI (Theme-Liste mit Favorites und Custom Seed).
@@ -54,6 +71,13 @@ function readUrlState() {
     partner: p.get('partner') ?? '',
     position: p.get('pos') ?? '',
     mix: p.get('mix') ?? '',
+    method: p.get('method') ?? '',
+    letters: p.get('letters') ?? '',
+    tone: p.get('tone') ?? '',
+    initial: p.get('initial') ?? '',
+    syllables: Number(p.get('syl') ?? 0),
+    alliteration: p.get('allit') === '1',
+    sort: p.get('sort') === '1',
   };
 }
 
@@ -133,6 +157,25 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
       ? (start?.position as AnchorPosition)
       : 'any',
   );
+  const [method, setMethod] = useState<Method>(() =>
+    METHODS.includes(start?.method as Method) ? (start?.method as Method) : 'words',
+  );
+  // Akronym-Buchstaben so, wie sie getippt werden - bereinigt wird beim Ziehen.
+  const [letters, setLetters] = useState<string>(() => normalizeLetters(start?.letters ?? ''));
+  const [tone, setTone] = useState<Tone | ''>(() =>
+    (TONES as readonly string[]).includes(start?.tone ?? '') ? (start?.tone as Tone) : '',
+  );
+  const [anfang, setAnfang] = useState<string>(() => normalizeLetters(start?.initial ?? ''));
+  const [silben, setSilben] = useState<number>(() =>
+    SILBEN.includes(start?.syllables ?? 0) ? (start?.syllables ?? 0) : 0,
+  );
+  const [stabreim, setStabreim] = useState<boolean>(() => start?.alliteration ?? false);
+  const [klang, setKlang] = useState<boolean>(() => start?.sort ?? false);
+  const filter: NameFilter = useMemo(
+    () => ({ initial: anfang, maxSyllables: silben, alliteration: stabreim }),
+    [anfang, silben, stabreim],
+  );
+  const importFeldRef = useRef<HTMLInputElement>(null);
   const [idee, setIdee] = useState<string>('');
   // client:only - die Komponente laeuft nur im Browser, der Speicher ist also
   // schon beim ersten Rendern lesbar.
@@ -204,13 +247,24 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
         seed,
         recipes: [],
         theme: null,
+        scores: [],
       };
     }
+    const darstellung = { tone, filter, sortByScore: klang };
     if (ansicht === 'variante' && variante) {
-      return suggestVariants({ ...variante, count, mutationChance, wordCount, language, seed });
+      return suggestVariants({
+        ...variante,
+        ...darstellung,
+        count,
+        mutationChance,
+        wordCount,
+        language,
+        seed,
+      });
     }
     if (ansicht === 'wort') {
       return suggestSeeded({
+        ...darstellung,
         word: wort,
         partner,
         position,
@@ -221,8 +275,19 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
         seed,
       });
     }
-    if (!theme) return { suggestions: [], seed, recipes: [], theme: null };
-    return suggest({ themeSlug, mix, count, mutationChance, wordCount, language, seed });
+    if (!theme) return { suggestions: [], seed, recipes: [], theme: null, scores: [] };
+    return suggest({
+      ...darstellung,
+      themeSlug,
+      mix,
+      method,
+      letters,
+      count,
+      mutationChance,
+      wordCount,
+      language,
+      seed,
+    });
   }, [
     ansicht,
     variante,
@@ -231,6 +296,11 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
     partner,
     position,
     mix,
+    method,
+    letters,
+    tone,
+    filter,
+    klang,
     themeSlug,
     count,
     mutation,
@@ -251,16 +321,28 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
   }, [language, ansicht, variante]);
 
   // Das Partner-Thema muss in der Namenssprache sichtbar sein, sonst zurueck
-  // auf die Zusaetze - dieselbe Regel wie in der TUI.
+  // auf die Zusaetze - dieselbe Regel wie in der TUI. Der Mix bleibt: er
+  // braucht keine Zusaetze und damit keine gemeinsame Sprache.
   useEffect(() => {
     if (partner && !available.some((th) => th.slug === partner)) setPartner('');
-    if (mix && !available.some((th) => th.slug === mix)) setMix('');
   }, [available, partner]);
 
-  // Partner oder feste Position legen zwei Woerter fest.
+  // Mix-Auswahl: erst die Themen der Namenssprache, dann die der anderen mit Kuerzel.
+  const mixThemen = useMemo(() => {
+    const sichtbar = new Set(available.map((th) => th.slug));
+    const fremd = themes().filter(
+      (th) => !sichtbar.has(th.slug) && !th.slug.startsWith(RANDOM_THEME_SLUG),
+    );
+    return [
+      ...available.map((th) => ({ slug: th.slug, name: th.name })),
+      ...fremd.map((th) => ({ slug: th.slug, name: `${th.name} (${th.language.toUpperCase()})` })),
+    ].filter((th) => th.slug !== themeSlug);
+  }, [available, themeSlug]);
+
+  // Partner, feste Position oder die Methode (Akronym, Mix) legen die Wortzahl fest.
   const wortzahlFest =
     ansicht === 'merkliste' ||
-    (ansicht === 'thema' && (Boolean(theme?.patterns.length) || mixAktiv)) ||
+    (ansicht === 'thema' && Boolean(stapel.theme?.patterns.length)) ||
     (ansicht === 'wort' && (Boolean(partner) || position !== 'any')) ||
     (ansicht === 'variante' && Boolean(variante?.theme.patterns.length));
 
@@ -271,7 +353,22 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
 
   useEffect(() => {
     setAktiv(0);
-  }, [seed, themeSlug, language, wordCount, mutation, count, ansicht, wort, variante]);
+  }, [
+    seed,
+    themeSlug,
+    language,
+    wordCount,
+    mutation,
+    count,
+    ansicht,
+    wort,
+    variante,
+    method,
+    letters,
+    tone,
+    filter,
+    klang,
+  ]);
 
   useEffect(() => {
     const ziel = fokusNach.current;
@@ -343,7 +440,14 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
       if (partner) p.set('partner', partner);
       if (position !== 'any') p.set('pos', position);
     }
-    if (ansicht === 'thema' && mixAktiv) p.set('mix', mix);
+    if (ansicht === 'thema' && mixAktiv && method !== 'acronym') p.set('mix', mix);
+    if (ansicht === 'thema' && method !== 'words') p.set('method', method);
+    if (ansicht === 'thema' && method === 'acronym' && letters) p.set('letters', letters);
+    if (tone) p.set('tone', tone);
+    if (anfang) p.set('initial', anfang);
+    if (silben) p.set('syl', String(silben));
+    if (stabreim) p.set('allit', '1');
+    if (klang) p.set('sort', '1');
     void kopieren(`${window.location.origin}${window.location.pathname}?${p}`, t.wortAdresse);
   }, [
     themeSlug,
@@ -357,6 +461,13 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
     position,
     mix,
     mixAktiv,
+    method,
+    letters,
+    tone,
+    anfang,
+    silben,
+    stabreim,
+    klang,
     kopieren,
   ]);
 
@@ -397,6 +508,39 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
     }
   }, [ansicht, merkliste, aktiv, suggestions, held, gemerkt, aendereMerkliste, t]);
 
+  /** Die Merkliste als Datei herunterladen - im Browser erzeugt, nichts wird gesendet. */
+  const exportieren = useCallback(() => {
+    const blob = new Blob([exportDokument(merkliste)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'codename-merkliste.json';
+    link.click();
+    URL.revokeObjectURL(url);
+    melde(t.meldungExportiert(merkliste.length));
+  }, [merkliste, melde, t]);
+
+  /** Eine Datei lesen und bekannte Namen ueberspringen - die Datei verlaesst den Browser nicht. */
+  const importieren = useCallback(
+    async (datei: File | undefined) => {
+      if (!datei) return;
+      let neu: Suggestion[];
+      try {
+        neu = leseImport(await datei.text());
+      } catch {
+        melde(t.meldungImportKaputt);
+        return;
+      }
+      if (neu.length === 0) {
+        melde(t.meldungImportLeer);
+        return;
+      }
+      const { liste, hinzu } = fuehreZusammen(merkliste, neu);
+      aendereMerkliste(liste, t.meldungImportiert(hinzu, neu.length - hinzu));
+    },
+    [merkliste, aendereMerkliste, melde, t],
+  );
+
   const ideeHinzu = useCallback(() => {
     const neu = eigeneIdee(idee);
     if (!neu) return;
@@ -420,7 +564,7 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
       const thema = stapel.theme;
       const name = stapel.suggestions[index]?.name;
       if (!base || !thema || !name) return;
-      const probe = suggestVariants({ base, theme: thema, keep, count: 1, language });
+      const probe = suggestVariants({ base, theme: thema, keep, count: 1, language, tone });
       if (probe.recipes.length === 0) {
         melde(t.meldungNichtsZuVariieren);
         return;
@@ -436,7 +580,7 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
       setAnsicht('variante');
       setSeed(randomSeed());
     },
-    [ansicht, aktiv, stapel, language, variante, melde, t],
+    [ansicht, aktiv, stapel, language, tone, variante, melde, t],
   );
 
   const neueRunde = useCallback(() => {
@@ -504,6 +648,19 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
     window.addEventListener('keydown', aufTaste);
     return () => window.removeEventListener('keydown', aufTaste);
   }, [blaettern, held, kopieren, merken, neueRunde, oeffne, variieren, t]);
+
+  const leerText =
+    ansicht === 'merkliste'
+      ? t.leerMerkliste
+      : ansicht === 'wort' && !wort.trim()
+        ? t.leerWort
+        : ansicht === 'thema' && method === 'acronym' && !letters
+          ? t.leerAkronym
+          : ansicht === 'thema' && method === 'acronym' && !stapel.theme?.patterns.length
+            ? t.leerAkronymKeine
+            : filterActive(filter)
+              ? t.leerFilter
+              : '';
 
   const kopfzeile =
     ansicht === 'merkliste'
@@ -574,25 +731,61 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
             )}
           </div>
           {ansicht === 'thema' && (
-            <div className="eingabe mb-2">
-              <label htmlFor="thema-mix" className="pixel text-[0.5rem] text-gold">
-                {t.mix}
+            <div className="eingabe mb-2 flex-wrap">
+              <label htmlFor="thema-methode" className="pixel text-[0.5rem] text-gold">
+                {t.methode}
               </label>
               <select
-                id="thema-mix"
-                value={mixAktiv ? mix : ''}
-                onChange={(e) => setMix(e.target.value)}
-                title={t.titelMix}
+                id="thema-methode"
+                value={method}
+                onChange={(e) => setMethod(e.target.value as Method)}
+                title={t.titelMethode}
               >
-                <option value="">{t.keinMix}</option>
-                {available
-                  .filter((th) => th.slug !== themeSlug)
-                  .map((th) => (
-                    <option key={th.slug} value={th.slug}>
-                      {th.name}
-                    </option>
-                  ))}
+                {METHODS.map((m) => (
+                  <option key={m} value={m}>
+                    {t.methoden[m]}
+                  </option>
+                ))}
               </select>
+              {method === 'acronym' ? (
+                <span className="flex items-center gap-2">
+                  <label htmlFor="thema-buchstaben" className="pixel text-[0.5rem] text-gold">
+                    {t.buchstaben}
+                  </label>
+                  <input
+                    id="thema-buchstaben"
+                    type="text"
+                    className="w-20"
+                    value={letters.toUpperCase()}
+                    maxLength={3}
+                    placeholder={t.platzhalterBuchstaben}
+                    onChange={(e) => setLetters(normalizeLetters(e.target.value))}
+                    onKeyDown={(e) => e.key === 'Escape' && e.currentTarget.blur()}
+                    spellCheck={false}
+                    autoComplete="off"
+                    title={t.titelBuchstaben}
+                  />
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <label htmlFor="thema-mix" className="pixel text-[0.5rem] text-gold">
+                    {t.mix}
+                  </label>
+                  <select
+                    id="thema-mix"
+                    value={mixAktiv ? mix : ''}
+                    onChange={(e) => setMix(e.target.value)}
+                    title={t.titelMix}
+                  >
+                    <option value="">{t.keinMix}</option>
+                    {mixThemen.map((th) => (
+                      <option key={th.slug} value={th.slug}>
+                        {th.name}
+                      </option>
+                    ))}
+                  </select>
+                </span>
+              )}
             </div>
           )}
           {ansicht === 'wort' && (
@@ -672,11 +865,72 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
               </FTaste>
             </div>
           )}
+          {ansicht !== 'merkliste' && (
+            <div className="eingabe mb-2 flex-wrap">
+              <label htmlFor="filter-ton" className="pixel text-[0.5rem] text-gold">
+                {t.ton}
+              </label>
+              <select
+                id="filter-ton"
+                value={tone}
+                onChange={(e) => setTone(e.target.value as Tone | '')}
+                title={t.titelTon}
+              >
+                {(['', ...TONES] as Array<Tone | ''>).map((ton) => (
+                  <option key={ton || 'alle'} value={ton}>
+                    {t.toene[ton]}
+                  </option>
+                ))}
+              </select>
+              <span className="flex items-center gap-2">
+                <label htmlFor="filter-anfang" className="pixel text-[0.5rem] text-gold">
+                  {t.anfang}
+                </label>
+                <input
+                  id="filter-anfang"
+                  type="text"
+                  className="w-20"
+                  value={anfang.toUpperCase()}
+                  maxLength={3}
+                  placeholder={t.platzhalterAnfang}
+                  onChange={(e) => setAnfang(normalizeLetters(e.target.value))}
+                  onKeyDown={(e) => e.key === 'Escape' && e.currentTarget.blur()}
+                  spellCheck={false}
+                  autoComplete="off"
+                  title={t.titelAnfang}
+                />
+              </span>
+              <span className="flex items-center gap-2">
+                <label htmlFor="filter-silben" className="pixel text-[0.5rem] text-gold">
+                  {t.silben}
+                </label>
+                <select
+                  id="filter-silben"
+                  value={String(silben)}
+                  onChange={(e) => setSilben(Number(e.target.value))}
+                  title={t.titelSilben}
+                >
+                  {SILBEN.map((n) => (
+                    <option key={n} value={String(n)}>
+                      {n === 0 ? t.silbenAlle : String(n)}
+                    </option>
+                  ))}
+                </select>
+              </span>
+              <FTaste active={stabreim} onClick={() => setStabreim((v) => !v)} title={t.titelAlliteration}>
+                {t.alliteration}
+              </FTaste>
+              <FTaste active={klang} onClick={() => setKlang((v) => !v)} title={t.titelKlang}>
+                {t.klang}
+              </FTaste>
+              {filterActive(filter) && (
+                <span className="pixel text-[0.5rem] text-magenta">{t.passen(suggestions.length)}</span>
+              )}
+            </div>
+          )}
           <ol className="kanal panel min-h-0 flex-1 overflow-y-auto">
             {suggestions.length === 0 && (
-              <li className="px-2 py-1 text-dunst">
-                {ansicht === 'merkliste' ? t.leerMerkliste : ansicht === 'wort' ? t.leerWort : ''}
-              </li>
+              <li className="px-2 py-1 text-dunst">{leerText}</li>
             )}
             {suggestions.map((s, index) => (
               <li key={`${s.slug}-${index}`}>
@@ -694,6 +948,7 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
                     {s.name.toUpperCase()}
                   </span>
                   <span className="rang-marke pixel hidden text-[0.44rem] sm:inline">
+                    {klang && stapel.scores[index] !== undefined ? `${stapel.scores[index]} ` : ''}
                     {s.mutated ? 'MUT' : ''}
                   </span>
                 </button>
@@ -726,9 +981,32 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
             </FTaste>
             <Musik sprache={sprache} />
             {ansicht === 'merkliste' ? (
-              <FTaste onClick={listeKopieren} title={t.titelListeKopieren}>
-                {t.listeKopieren}
-              </FTaste>
+              <>
+                <FTaste onClick={listeKopieren} title={t.titelListeKopieren}>
+                  {t.listeKopieren}
+                </FTaste>
+                <FTaste
+                  onClick={exportieren}
+                  title={t.titelExportieren}
+                  disabled={merkliste.length === 0}
+                >
+                  {t.exportieren}
+                </FTaste>
+                <FTaste onClick={() => importFeldRef.current?.click()} title={t.titelImportieren}>
+                  {t.importieren}
+                </FTaste>
+                <input
+                  ref={importFeldRef}
+                  type="file"
+                  accept=".json,application/json"
+                  className="hidden"
+                  aria-label={t.importieren}
+                  onChange={(e) => {
+                    void importieren(e.target.files?.[0]);
+                    e.target.value = '';
+                  }}
+                />
+              </>
             ) : (
               <FTaste
                 onClick={adresseKopieren}

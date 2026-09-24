@@ -1,3 +1,5 @@
+import type { Method, Tone } from '../lib/generator';
+
 /*
  * Oberflaechentexte in zwei Sprachen.
  *
@@ -91,6 +93,38 @@ export interface UiTexte {
   mix: string;
   keinMix: string;
   titelMix: string;
+  methode: string;
+  methoden: Record<Method, string>;
+  titelMethode: string;
+  buchstaben: string;
+  platzhalterBuchstaben: string;
+  titelBuchstaben: string;
+  ton: string;
+  toene: Record<Tone | '', string>;
+  titelTon: string;
+  filter: string;
+  anfang: string;
+  platzhalterAnfang: string;
+  titelAnfang: string;
+  silben: string;
+  silbenAlle: string;
+  titelSilben: string;
+  alliteration: string;
+  titelAlliteration: string;
+  klang: string;
+  titelKlang: string;
+  passen: (n: number) => string;
+  leerFilter: string;
+  leerAkronym: string;
+  leerAkronymKeine: string;
+  exportieren: string;
+  importieren: string;
+  titelExportieren: string;
+  titelImportieren: string;
+  meldungExportiert: (n: number) => string;
+  meldungImportiert: (neu: number, schonDa: number) => string;
+  meldungImportLeer: string;
+  meldungImportKaputt: string;
   laufschrift: string[];
 }
 
@@ -176,11 +210,59 @@ const de: UiTexte = {
   mix: 'MIX',
   keinMix: 'kein Mix',
   titelMix: 'Das Thema mit einem zweiten kreuzen - je ein Wort aus beiden, z.B. Snowdon Lepus',
+  methode: 'METHODE',
+  methoden: {
+    words: 'Themenwörter',
+    coined: 'Kunstwörter',
+    blend: 'Kofferwörter',
+    acronym: 'Akronym',
+  },
+  titelMethode:
+    'Wie die Namen entstehen: Themenwörter mit Zusätzen, neue Wörter im Klang des Themas, zwei verschmolzene Themenwörter oder ein Akronym',
+  buchstaben: 'BUCHSTABEN',
+  platzhalterBuchstaben: 'z.B. SMT',
+  titelBuchstaben: 'Bis zu drei Buchstaben - jedes Wort des Namens beginnt mit seinem',
+  ton: 'TON',
+  toene: {
+    '': 'alle',
+    dark: 'düster',
+    bright: 'hell',
+    noble: 'edel',
+    swift: 'schnell',
+    calm: 'ruhig',
+    fierce: 'wild',
+  },
+  titelTon: 'Nur Zusätze dieser Stimmung',
+  filter: 'FILTER',
+  anfang: 'ANFANG',
+  platzhalterAnfang: 'z.B. S',
+  titelAnfang: 'Nur Namen, die mit diesen Buchstaben beginnen',
+  silben: 'MAX. SILBEN',
+  silbenAlle: 'alle',
+  titelSilben: 'Nur Namen mit höchstens so vielen Silben',
+  alliteration: 'STABREIM',
+  titelAlliteration: 'Nur Namen, deren Wörter mit demselben Buchstaben beginnen (Alliteration)',
+  klang: 'NACH KLANG',
+  titelKlang: 'Die am besten klingenden Namen zuerst: kurz, gut sprechbar, leicht zu buchstabieren',
+  passen: (n) => `${n} PASSEN`,
+  leerFilter: 'KEIN NAME PASST ZUM FILTER.',
+  leerAkronym: 'OBEN BIS ZU DREI BUCHSTABEN EINTIPPEN.',
+  leerAkronymKeine: 'KEINE WÖRTER FÜR DIESE BUCHSTABEN IN DIESEM THEMA.',
+  exportieren: 'EXPORT',
+  importieren: 'IMPORT',
+  titelExportieren: 'Die Merkliste als Datei speichern - die Terminalfassung liest sie mit --import-favorites',
+  titelImportieren:
+    'Eine Merkliste aus einer Datei übernehmen - ein Export dieser Seite, der Terminalfassung oder deren settings.json',
+  meldungExportiert: (n) => `${n} NAMEN ALS DATEI GESPEICHERT`,
+  meldungImportiert: (neu, schonDa) => `${neu} NEU AUF DER MERKLISTE, ${schonDa} SCHON DA`,
+  meldungImportLeer: 'IN DER DATEI STEHEN KEINE NAMEN',
+  meldungImportKaputt: 'DIE DATEI IST KEINE MERKLISTE',
   laufschrift: [
     'CODENAME GENERATOR',
     'ALLES LÄUFT IM BROWSER, NICHTS WIRD GESENDET',
     'F MERKT EINEN NAMEN, O NIMMT DEIN EIGENES WORT - DIE MERKLISTE BLEIBT IN DEINEM BROWSER',
     'W HÄLT DAS WORT, M DEN ZUSATZ - SO TASTEST DU DICH AN EINEN NAMEN HERAN',
+    'KUNSTWÖRTER, KOFFERWÖRTER, AKRONYME - DAZU FILTER NACH TON, SILBEN UND KLANG',
     'IM DEUTSCHEN WIRD DER ZUSATZ GEBEUGT: STILLER FALKE - STILLE EULE - STILLES WIESEL',
     'DIESELBEN WORTLISTEN TREIBEN DIE TERMINALFASSUNG AN: GITHUB.COM/MICHAELBLAESS/CODENAME-GENERATOR',
     'NAMEN KÖNNEN MIT BESTEHENDEN PRODUKTNAMEN ZUSAMMENFALLEN - VOR VERWENDUNG PRÜFEN',
@@ -271,11 +353,59 @@ const en: UiTexte = {
   mix: 'MIX',
   keinMix: 'no mix',
   titelMix: 'Cross the theme with a second one - one word from each, e.g. Snowdon Lepus',
+  methode: 'METHOD',
+  methoden: {
+    words: 'theme words',
+    coined: 'coined words',
+    blend: 'blends',
+    acronym: 'acronym',
+  },
+  titelMethode:
+    'How names are made: theme words with modifiers, new words that sound like the theme, two theme words melted into one, or an acronym',
+  buchstaben: 'LETTERS',
+  platzhalterBuchstaben: 'e.g. SMT',
+  titelBuchstaben: 'Up to three letters - every word of the name starts with its letter',
+  ton: 'TONE',
+  toene: {
+    '': 'any',
+    dark: 'dark',
+    bright: 'bright',
+    noble: 'noble',
+    swift: 'swift',
+    calm: 'calm',
+    fierce: 'fierce',
+  },
+  titelTon: 'Only modifiers of this mood',
+  filter: 'FILTER',
+  anfang: 'STARTS',
+  platzhalterAnfang: 'e.g. S',
+  titelAnfang: 'Only names starting with these letters',
+  silben: 'MAX SYLLABLES',
+  silbenAlle: 'any',
+  titelSilben: 'Only names with at most this many syllables',
+  alliteration: 'ALLITERATION',
+  titelAlliteration: 'Only names whose words start with the same letter',
+  klang: 'BY SOUND',
+  titelKlang: 'Best-sounding names first: short, easy to say and to spell',
+  passen: (n) => `${n} MATCH`,
+  leerFilter: 'NO NAME MATCHES THE FILTER.',
+  leerAkronym: 'TYPE UP TO THREE LETTERS ABOVE.',
+  leerAkronymKeine: 'NO WORDS FOR THESE LETTERS IN THIS THEME.',
+  exportieren: 'EXPORT',
+  importieren: 'IMPORT',
+  titelExportieren: 'Save the shortlist as a file - the terminal version reads it with --import-favorites',
+  titelImportieren:
+    'Take over a shortlist from a file - an export of this page, of the terminal version or its settings.json',
+  meldungExportiert: (n) => `${n} NAMES SAVED AS A FILE`,
+  meldungImportiert: (neu, schonDa) => `${neu} NEW ON THE SHORTLIST, ${schonDa} ALREADY THERE`,
+  meldungImportLeer: 'THE FILE HOLDS NO NAMES',
+  meldungImportKaputt: 'THE FILE IS NOT A SHORTLIST',
   laufschrift: [
     'CODENAME GENERATOR',
     'EVERYTHING RUNS IN YOUR BROWSER, NOTHING IS SENT ANYWHERE',
     'F KEEPS A NAME, O TAKES YOUR OWN WORD - THE SHORTLIST STAYS IN YOUR BROWSER',
     'W KEEPS THE WORD, M THE MODIFIER - HOME IN ON A NAME STEP BY STEP',
+    'COINED WORDS, BLENDS, ACRONYMS - PLUS FILTERS FOR TONE, SYLLABLES AND SOUND',
     'GERMAN INFLECTS THE MODIFIER: STILLER FALKE - STILLE EULE - STILLES WIESEL',
     'THE SAME WORD LISTS DRIVE THE TERMINAL VERSION: GITHUB.COM/MICHAELBLAESS/CODENAME-GENERATOR',
     'NAMES MAY COLLIDE WITH EXISTING PRODUCT NAMES - CHECK BEFORE YOU USE ONE',

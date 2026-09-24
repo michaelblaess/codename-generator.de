@@ -38,7 +38,19 @@ Browser - kein Backend, kein Tracking, nichts verlässt die Seite.
   öffnet direkt diese Ansicht.
 - **Themen-Mix** (MIX über der Liste, Adresse `?theme=whisky&mix=constellations`): Das Thema
   wird mit einem zweiten gekreuzt, jeder Name trägt je ein Wort aus beiden
-  (`Rigel Andromeda`). Kein Wort kommt im Stapel doppelt vor.
+  (`Rigel Andromeda`). Kein Wort kommt im Stapel doppelt vor. Themen der anderen Sprache
+  gehen auch.
+- **Methoden** (METHODE über der Liste): *Themenwörter* ist das bisherige Verfahren.
+  *Kunstwörter* erfindet neue Wörter im Klang des Themas, *Kofferwörter* verschmelzen zwei
+  Themenwörter an einem gemeinsamen Buchstaben (`Orion` + `Taurus` = `Orisker`), mit Mix
+  kommt die hintere Hälfte aus dem zweiten Thema. *Akronym* nimmt bis zu drei Buchstaben,
+  jedes Wort beginnt mit seinem (`SM` -> `Stork Maker`). Adresse:
+  `?method=acronym&letters=sm`.
+- **Ton und Filter** (Zeile über der Liste): TON beschränkt die Zusätze auf eine Stimmung
+  (düster, hell, edel, schnell, ruhig, wild). ANFANG, MAX. SILBEN und STABREIM sieben die
+  Namen, dafür wird ein größerer Vorrat gezogen, damit die Liste voll bleibt. NACH KLANG
+  sortiert nach einem Wert von 0 bis 100 (kurz, gut sprechbar, leicht zu buchstabieren) und
+  zeigt ihn neben jedem Namen. Alles steht im Permalink.
 - **Variieren** (Tasten `w` und `m`): `w` hält das Wort des großen Namens und würfelt neue
   Zusätze, `m` hält den Zusatz und wechselt das Wort - aus `Witternder Bär` werden
   `Witternde Feuerwanze` und `Witterndes Damwild`, richtig gebeugt. Aus einer Variante
@@ -46,7 +58,10 @@ Browser - kein Backend, kein Tracking, nichts verlässt die Seite.
 - **Merkliste** (Taste `f` merkt, `v` zeigt sie): Gemerkte Namen bleiben im Browser, der
   Mutationsregler wirkt auf sie weiter. Mit `+` setzt du eigene Ideen dazu, `Liste
   kopieren` legt alle Namen untereinander in die Zwischenablage. Das Speicherformat ist das
-  der Favoriten in der TUI.
+  der Favoriten in der TUI: `EXPORT` speichert die Liste als Datei, die die TUI mit
+  `--import-favorites` liest, `IMPORT` übernimmt eine Datei aus der TUI
+  (`--export-favorites` oder direkt ihre `settings.json`). Beides läuft im Browser, nichts
+  wird hochgeladen.
 - **Permalinks.** Jeder Stapel hat einen Seed - der Knopf `Link` kopiert eine URL, die
   genau diesen Stapel wieder erzeugt.
 - **Zwei Oberflächensprachen.** Deutsch liegt unter `/`, Englisch unter `/en/`, beide aus
@@ -70,7 +85,8 @@ npm run dev
 **Änderungen am Inhalt betreffen immer beide Fassungen.** Neue Themen, neue Wörter oder
 eine Regeländerung in der Grammatik gehören zuerst ins Python-Repo, danach hier synchronisiert.
 `npm run daten:pruefen` macht den Abgleich und schlägt fehl, sobald die JSON-Dateien vom
-Python-Stand abweichen - der Wächter gegen "vergessen nachzuziehen".
+Python-Stand abweichen - der Wächter gegen "vergessen nachzuziehen". Die CI fährt dieselbe
+Prüfung gegen einen frischen Checkout des Python-Repos.
 
 **Gemeinsame Testvektoren.** Der Kern existiert zweimal, in Python und in TypeScript.
 Damit beide gleich rechnen, liegen die Testfälle für alles Deterministische (Slug,
@@ -104,6 +120,9 @@ Der Smoketest braucht einmalig ein Headless-Chromium:
 src/lib/generator.ts   Namensbau, Muster, Themen   (Port von generator.py)
 src/lib/grammar.ts     deutsche Flexion            (Port von grammar.py)
 src/lib/phonetic.ts    phonetische Mutation        (Port von phonetic.py)
+src/lib/coinage.ts     Kunst- und Kofferwörter       (Port von coinage.py)
+src/lib/scoring.ts     Silben, Klangwert, Filter     (Port von scoring.py)
+src/lib/merkliste.ts   Merkliste im localStorage, Export/Import
 src/lib/rng.ts         seedbarer Zufall (mulberry32)
 src/data/*.json        erzeugt, nicht editieren
 ```
@@ -115,16 +134,18 @@ Innerhalb dieser Seite sind Seeds stabil, und genau das brauchen die Permalinks.
 ## Gestaltung
 
 Die Optik folgt **Goldrunner** (Atari ST, 1987): schwarzer Grund, Gold, Magenta und
-Grün, Copper-Balken an der Oberkante. Die Seite passt in einen Bildschirm - die Listen
-rollen in ihren Kästen, die Seite selbst nicht.
+Grün, Copper-Balken an der Oberkante. Am Desktop passt die Seite in einen Bildschirm - die
+Listen rollen in ihren Kästen, die Seite selbst nicht. Unter 1024 px rollt stattdessen die
+Seite, damit die Listen auf dem Handy ihre Höhe behalten.
 
 Die frühere C64-Fassung mit den Regenbogen-Copper-Balken bleibt als Rückfallebene
 erhalten und liegt auf dem Tag `design-c64-copperbars`.
 
 ## Auslieferung
 
-Jeder Push auf `main` fährt die Tests, baut und deployt auf GitHub Pages. `public/CNAME`
-zeigt auf die Produktivdomain.
+Jeder Push auf `main` gleicht die Daten mit dem Python-Repo ab, fährt die Tests und baut.
+Das Ausliefern auf GitHub Pages startet von Hand (`workflow_dispatch`), bis Pages für das
+Repo eingeschaltet ist. `public/CNAME` zeigt auf die Produktivdomain.
 
 ## Danksagung
 
