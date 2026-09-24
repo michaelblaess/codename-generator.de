@@ -147,7 +147,7 @@ await seite.waitForTimeout(500);
 const themen = (await seite.locator('aside ul li').allInnerTexts()).join(' | ');
 pruefe(themen.includes('Tierwelt'), 'Tierwelt im deutschen Modus sichtbar');
 pruefe(!themen.includes('Dangerous Animals'), 'englisches Thema ausgeblendet');
-pruefe(themen.includes('Swatch'), 'neutrales Thema bleibt in beiden Sprachen');
+pruefe(themen.includes('Racehorses'), 'neutrales Thema bleibt in beiden Sprachen');
 
 // 6. Deutsche Flexion im echten DOM.
 await seite.getByRole('button', { name: /Tierwelt/ }).click();

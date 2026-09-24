@@ -21,12 +21,12 @@ Browser - kein Backend, kein Tracking, nichts verlässt die Seite.
 
 ## Was die Seite kann
 
-- **24 kuratierte Themen**, 2735 Wörter: griechische/ägyptische/nordische Götter,
-  Rennpferde, Whisky, Weine, Berge, Wahrzeichen, historische Schiffe, Swatch-Modelle,
+- **23 kuratierte Themen**, 2638 Wörter: griechische/ägyptische/nordische Götter,
+  Rennpferde, Whisky, Weine, Berge, Wahrzeichen, historische Schiffe,
   Tiere, Blumen, Edelsteine, Pilze, Flugsicherung, Dev-Verben und mehr.
 - **Englisch und Deutsch.** Deutsch beugt den Modifikator nach dem Genus des Substantivs,
   deshalb steht dort `Stiller Falke`, `Stille Eule`, `Stilles Wiesel` und keine
-  Wort-für-Wort-Übersetzung. Themen aus Eigennamen (Götter, Rennpferde, Swatch-Modelle)
+  Wort-für-Wort-Übersetzung. Themen aus Eigennamen (Götter, Rennpferde, Whisky)
   funktionieren in beiden Sprachen.
 - **Phonetische Mutation** schiebt ein Wort aus dem Wörterbuch heraus:
   `Pegasus -> Pegasos`. Ein `*` markiert einen mutierten Vorschlag.

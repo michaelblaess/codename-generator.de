@@ -21,12 +21,12 @@ tracking, nothing leaves the page.
 
 ## What it does
 
-- **24 curated themes**, 2735 words: Greek/Egyptian/Norse gods, racehorses, whisky, wines,
-  mountains, landmarks, historic ships, Swatch watch models, animals, flowers, gemstones,
+- **23 curated themes**, 2638 words: Greek/Egyptian/Norse gods, racehorses, whisky, wines,
+  mountains, landmarks, historic ships, animals, flowers, gemstones,
   mushrooms, air traffic control, dev verbs and more.
 - **English and German.** German inflects the modifier after the noun's gender, so you get
   `Stiller Falke`, `Stille Eule`, `Stilles Wiesel` - not a word-by-word translation. Themes
-  built from proper names (gods, racehorses, Swatch models) work in both languages.
+  built from proper names (gods, racehorses, whisky) work in both languages.
 - **Phonetic mutation** nudges a word off the dictionary: `Pegasus -> Pegasos`. A `*` marks
   a mutated suggestion.
 - **Your own word** (key `o`): your word is combined with the modifiers of the chosen

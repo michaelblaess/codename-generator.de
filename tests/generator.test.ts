@@ -99,7 +99,7 @@ describe('Stapel', () => {
   });
 
   it('erzeugt weder doppelte Leerzeichen noch Rand-Bindestriche', () => {
-    for (const slug of ['swatch', 'tierwelt', 'dev']) {
+    for (const slug of ['racehorses', 'tierwelt', 'dev']) {
       const { suggestions } = suggest({ themeSlug: slug, count: 20, seed: 11, language: 'de' });
       for (const s of suggestions) {
         expect(s.name).not.toMatch(/\s{2}/);
@@ -148,8 +148,8 @@ describe('Sprachen', () => {
   });
 
   it('neutrale Themes folgen der gewaehlten Sprache', () => {
-    expect(effectiveLanguage(themeBySlug('swatch')!, 'de')).toBe('de');
-    expect(effectiveLanguage(themeBySlug('swatch')!, 'en')).toBe('en');
+    expect(effectiveLanguage(themeBySlug('racehorses')!, 'de')).toBe('de');
+    expect(effectiveLanguage(themeBySlug('racehorses')!, 'en')).toBe('en');
     // Ein gebundenes Theme laesst sich nicht umstellen.
     expect(effectiveLanguage(themeBySlug(GERMAN_THEME)!, 'en')).toBe('de');
     expect(effectiveLanguage(themeBySlug('animals')!, 'de')).toBe('en');
@@ -158,7 +158,7 @@ describe('Sprachen', () => {
   it('zeigt pro Sprache die eigenen plus die neutralen Themes', () => {
     const de = visibleThemes('de').map((t) => t.slug);
     expect(de).toContain('tierwelt');
-    expect(de).toContain('swatch');
+    expect(de).toContain('racehorses');
     expect(de).not.toContain('animals');
     expect(de).toContain('random-de');
     expect(de).not.toContain('random');
@@ -190,8 +190,8 @@ describe('Sprachen', () => {
 describe('Daten', () => {
   it('enthaelt die erwarteten Themes und Woerter', () => {
     const list = themes().filter((t) => !t.slug.startsWith('random'));
-    expect(list.length).toBe(24);
-    expect(list.reduce((n, t) => n + t.words.length, 0)).toBe(2735);
+    expect(list.length).toBe(23);
+    expect(list.reduce((n, t) => n + t.words.length, 0)).toBe(2638);
   });
 
   it('deutsche Themes fuehren ein Genus pro Wort', () => {

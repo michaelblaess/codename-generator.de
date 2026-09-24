@@ -74,7 +74,6 @@ export const IMPRESSUM: Record<UiSprache, Rechtstext> = {
         titel: 'Marken',
         zeilen: [
           'Genannte Marken und Produktnamen gehören ihren jeweiligen Inhabern. Sie werden hier ausschließlich beschreibend genannt, es besteht keine Verbindung zu den Rechteinhabern und keine Empfehlung durch sie.',
-          'Das gilt besonders für das Thema "Swatch Watches", das historische Modellnamen als Wortmaterial verwendet: Swatch ist eine eingetragene Marke der Swatch AG.',
           'Die Gestaltung ist eine Hommage an das Atari-ST-Spiel Goldrunner (Microdeal, 1987). Auch hier besteht keine Verbindung zu den Rechteinhabern.',
         ],
       },
@@ -123,7 +122,6 @@ export const IMPRESSUM: Record<UiSprache, Rechtstext> = {
         titel: 'Trademarks',
         zeilen: [
           'Trademarks and product names belong to their respective owners. They are named here descriptively only. There is no connection to, and no endorsement by, the rights holders.',
-          'This applies in particular to the "Swatch Watches" theme, which uses historic model names as raw word material: Swatch is a registered trademark of Swatch AG.',
           'The visual design is a homage to the Atari ST game Goldrunner (Microdeal, 1987). Here, too, there is no connection to the rights holders.',
         ],
       },
