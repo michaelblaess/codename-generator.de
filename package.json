@@ -14,9 +14,10 @@
     "daten:pruefen": "node tools/sync-wordlists.mjs && git diff --exit-code -- src/data tests/vectors"
   },
   "dependencies": {
-    "@astrojs/react": "^4.2.0",
+    "@astrojs/react": "^7.0.0",
     "@astrojs/sitemap": "^3.3.0",
     "astro": "^7.2.4",
+    "oxc-transform-react": "^0.145.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "retro-text-effects": "github:michaelblaess/retro-text-effects.js#v0.7.1"
