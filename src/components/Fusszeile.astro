@@ -39,8 +39,11 @@ const andere: UiSprache = sprache === 'de' ? 'en' : 'de';
     >
   </nav>
 
-  <!-- Der Umschalter springt auf dieselbe Seite in der anderen Sprache. -->
-  <a href={pfad(seite, andere)} class="fussweg" hreflang={andere} lang={andere}>
-    {UI[sprache].andereSpracheName}
-  </a>
+  <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
+    <span>© 2026 Michael Blaess</span>
+    <!-- Der Umschalter springt auf dieselbe Seite in der anderen Sprache. -->
+    <a href={pfad(seite, andere)} class="fussweg" hreflang={andere} lang={andere}>
+      {UI[sprache].andereSpracheName}
+    </a>
+  </div>
 </footer>

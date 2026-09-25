@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
 import sitemap from '@astrojs/sitemap';
@@ -17,10 +18,21 @@ import tailwindcss from '@tailwindcss/vite';
 const SITE = 'https://michaelblaess.github.io';
 const BASE = '/codename-generator.de';
 
+// lastmod je Seite aus dem letzten Commit, der sie oder etwas Gemeinsames
+// (Layout, Bauteile, Texte, Daten) beruehrt hat. Die Pipeline braucht dafuer
+// die volle Historie (fetch-depth: 0), sonst stuende ueberall derselbe Tag.
+const GEMEINSAM = ['src/layouts', 'src/components', 'src/i18n', 'src/lib', 'src/data', 'src/styles'];
+function letzteAenderung(url) {
+  const rest = new URL(url).pathname.slice(BASE.length).replace(/^\/|\/$/g, '');
+  const seite = `src/pages/${rest === '' ? 'index' : rest === 'en' ? 'en/index' : rest}.astro`;
+  const datum = execFileSync('git', ['log', '-1', '--format=%cI', '--', seite, ...GEMEINSAM], { encoding: 'utf8' }).trim();
+  return datum || new Date().toISOString();
+}
+
 export default defineConfig({
   site: SITE,
   base: BASE,
-  integrations: [react(), sitemap()],
+  integrations: [react(), sitemap({ serialize: (item) => ({ ...item, lastmod: letzteAenderung(item.url) }) })],
   // Tailwind kommt seit Fassung 4 als Vite-Plugin. Die frueheren
   // Basis-Stile (applyBaseStyles) stecken jetzt in @import "tailwindcss"
   // in src/styles/global.css.

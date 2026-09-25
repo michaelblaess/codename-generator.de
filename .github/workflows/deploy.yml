@@ -20,7 +20,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      # Volle Historie: die Sitemap nimmt lastmod aus git log.
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v7
         with:
           node-version: 24
@@ -47,11 +50,8 @@ jobs:
         with:
           path: dist
 
-  # Solange das Repo privat ist, gibt es kein Pages - der Deploy scheitert dann
-  # mit 404. Bis zum Livegang nur von Hand starten, Build und Tests laufen
-  # trotzdem bei jedem Push.
+  # Seit dem Livegang am 25.09.2026 deployt jeder Push auf main.
   deploy:
-    if: github.event_name == 'workflow_dispatch'
     needs: build
     runs-on: ubuntu-latest
     environment:

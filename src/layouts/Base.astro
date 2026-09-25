@@ -9,6 +9,7 @@ import pressStart from '../assets/fonts/pressstart.woff2';
 // Bungee traegt nur den grossen Namen - ein Schriftzug im Ton eines
 // Spielhallen-Logos. Alles Lesbare bleibt in PlexMono.
 import bungee from '../assets/fonts/bungee.woff2';
+import { pfad } from '../i18n/ui';
 
 interface Props {
   title: string;
@@ -16,14 +17,25 @@ interface Props {
   // Das Sprachattribut stand frueher fest auf "en", obwohl die Seite deutsch
   // ist - Vorleseprogramme haben den Text dann englisch ausgesprochen.
   lang?: 'de' | 'en';
+  // Fuer die hreflang-Verweise auf dieselbe Seite in der anderen Sprache.
+  // Ohne Angabe (404) gibt es keine Gegenstuecke.
+  seite?: 'start' | 'impressum' | 'datenschutz';
 }
 
-const { title, description, lang = 'de' } = Astro.props;
+const { title, description, lang = 'de', seite } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 // BASE_URL uebernimmt die Schreibweise aus astro.config und kann mit oder ohne
 // Schraegstrich enden - deshalb hier normalisieren, sonst entsteht
 // "/codename-generator.defavicon.svg".
 const favicon = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/favicon.svg`;
+// Englisch ist die Vorgabe fuer alle anderen Sprachen, wie beim Generator.
+const sprachen = seite
+  ? [
+      { hreflang: 'de', href: new URL(pfad(seite, 'de'), Astro.site) },
+      { hreflang: 'en', href: new URL(pfad(seite, 'en'), Astro.site) },
+      { hreflang: 'x-default', href: new URL(pfad(seite, 'en'), Astro.site) },
+    ]
+  : [];
 ---
 
 <!doctype html>
@@ -35,6 +47,7 @@ const favicon = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/favicon.svg`;
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
     <link rel="icon" href={favicon} type="image/svg+xml" />
+    {sprachen.map((s) => <link rel="alternate" hreflang={s.hreflang} href={s.href} />)}
     <meta property="og:type" content="website" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />

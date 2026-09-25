@@ -1,0 +1,14 @@
+{
+  "dist": "dist",
+  "sprachen": { "de": "", "en": "en" },
+  "rechtsseiten": {
+    "de": ["impressum", "datenschutz"],
+    "en": ["en/legal", "en/privacy"]
+  },
+  "copyright": "© 2026 Michael Blaess",
+  "zaehlung": false,
+  "ausnahmen": {
+    "themeToggle": "Die Seite hat bewusst nur die eine Goldrunner-Optik (schwarzer Grund, Atari ST 1987), einen hellen Modus gibt es nicht. Stand 25.09.2026.",
+    "ogImage": "Kein Vorschaubild für geteilte Links, auf Michaels Wunsch werden keine Bilder erzeugt. og:title und og:description sind gesetzt. Stand 25.09.2026."
+  }
+}

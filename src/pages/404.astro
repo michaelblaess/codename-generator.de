@@ -1,0 +1,32 @@
+---
+/*
+ * GitHub Pages liefert diese Datei fuer jede unbekannte Adresse aus. Die
+ * Sprache ist dort nicht bekannt, deshalb stehen beide Zeilen da.
+ */
+import Base from '../layouts/Base.astro';
+import Fusszeile from '../components/Fusszeile.astro';
+import { pfad } from '../i18n/ui';
+---
+
+<Base
+  title="Seite nicht gefunden - Codename Generator"
+  description="Diese Adresse gibt es nicht. Zurück zum Codename Generator."
+  lang="de"
+>
+  <div class="bildschirm">
+    <div class="copper"></div>
+
+    <div class="kanal waechst flex flex-col items-center justify-center gap-6 px-4 py-10 text-center">
+      <h1 class="pixel gold text-[0.8rem] sm:text-[1.05rem]">**** 404 ****</h1>
+      <p class="pixel text-[0.6rem] leading-loose text-creme">
+        SEITE NICHT GEFUNDEN<br />PAGE NOT FOUND
+      </p>
+      <p class="pixel flex flex-wrap justify-center gap-x-6 gap-y-2 text-[0.55rem]">
+        <a href={pfad('start', 'de')} class="fussweg" lang="de">ZUR STARTSEITE</a>
+        <a href={pfad('start', 'en')} class="fussweg" lang="en">TO THE START PAGE</a>
+      </p>
+    </div>
+
+    <Fusszeile sprache="de" seite="start" />
+  </div>
+</Base>
