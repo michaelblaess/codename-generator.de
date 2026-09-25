@@ -7,7 +7,7 @@ import type { Method, Tone } from '../lib/generator';
  * Die Oberflaeche haengt an der Adresse (/ ist Deutsch, /en/ ist Englisch),
  * die Namenssprache bleibt im Bedienfeld umschaltbar - sonst koennte man
  * keine deutschen Namen mit englischer Oberflaeche ziehen. Beim Einstieg
- * folgt die Namenssprache der Oberflaeche.
+ * ist die Namenssprache immer Englisch.
  */
 
 export const SPRACHEN = ['de', 'en'] as const;
@@ -135,7 +135,7 @@ const de: UiTexte = {
     'Erzeugt Projekt-Codenamen aus kuratierten Wortlisten, auf Deutsch oder Englisch, mit phonetischer Mutation. Laeuft vollstaendig im Browser.',
   bestand: (themen, woerter) => `${themen} THEMEN, ${woerter} WÖRTER FREI`,
   bereit: 'READY.',
-  fuerOrdner: 'für Ordner und Adressen:',
+  fuerOrdner: 'für Repos und URLs:',
   mutiert: 'MUTIERT',
   top: (n) => `TOP ${n}`,
   runde: (n) => `RUNDE ${n}`,
@@ -201,10 +201,10 @@ const de: UiTexte = {
   titelPartner: 'Womit dein Wort kombiniert wird: Zusätze oder die Wörter eines Themas',
   titelStellung: 'Wo dein Wort im Namen steht - eine feste Stelle heißt: zwei Wörter',
   varianten: 'VARIANTEN VON',
-  wortHalten: 'WORT HALTEN',
-  zusatzHalten: 'ZUSATZ HALTEN',
-  titelWortHalten: 'Das Wort dieses Namens behalten und neue Zusätze würfeln (Taste W)',
-  titelZusatzHalten: 'Den Zusatz dieses Namens behalten und das Wort wechseln (Taste M)',
+  wortHalten: 'NEUE ZUSÄTZE',
+  zusatzHalten: 'NEUES WORT',
+  titelWortHalten: 'Varianten: das Wort dieses Namens bleibt, die Zusätze werden neu gewürfelt (Taste W)',
+  titelZusatzHalten: 'Varianten: der Zusatz dieses Namens bleibt, das Wort wechselt (Taste M)',
   meldungNichtsZuVariieren: 'HIER GIBT ES NICHTS ZU VARIIEREN',
   meldungMerklisteNichtVariierbar: 'MERKLISTE NICHT VARIIERBAR - ERST EIN THEMA WÄHLEN',
   mix: 'MIX',
@@ -259,7 +259,6 @@ const de: UiTexte = {
   meldungImportKaputt: 'DIE DATEI IST KEINE MERKLISTE',
   laufschrift: [
     'CODENAME GENERATOR',
-    'ALLES LÄUFT IM BROWSER, NICHTS WIRD GESENDET',
     'F MERKT EINEN NAMEN, O NIMMT DEIN EIGENES WORT - DIE MERKLISTE BLEIBT IN DEINEM BROWSER',
     'W HÄLT DAS WORT, M DEN ZUSATZ - SO TASTEST DU DICH AN EINEN NAMEN HERAN',
     'KUNSTWÖRTER, KOFFERWÖRTER, AKRONYME - DAZU FILTER NACH TON, SILBEN UND KLANG',
@@ -278,7 +277,7 @@ const en: UiTexte = {
     'Generate project codenames from curated word lists, in English or German, with optional phonetic mutation. Runs entirely in the browser.',
   bestand: (themen, woerter) => `${themen} THEMES, ${woerter} WORDS FREE`,
   bereit: 'READY.',
-  fuerOrdner: 'for folders and URLs:',
+  fuerOrdner: 'for repos and URLs:',
   mutiert: 'MUTATED',
   top: (n) => `TOP ${n}`,
   runde: (n) => `ROUND ${n}`,
@@ -344,10 +343,10 @@ const en: UiTexte = {
   titelPartner: 'What your word is combined with: modifiers or the words of a theme',
   titelStellung: 'Where your word stands in the name - a fixed spot means two words',
   varianten: 'VARIANTS OF',
-  wortHalten: 'KEEP WORD',
-  zusatzHalten: 'KEEP MODIFIER',
-  titelWortHalten: 'Keep the word of this name and roll new modifiers (key W)',
-  titelZusatzHalten: 'Keep the modifier of this name and swap the word (key M)',
+  wortHalten: 'NEW MODIFIERS',
+  zusatzHalten: 'NEW WORD',
+  titelWortHalten: 'Variants: the word of this name stays, the modifiers are rolled anew (key W)',
+  titelZusatzHalten: 'Variants: the modifier of this name stays, the word changes (key M)',
   meldungNichtsZuVariieren: 'NOTHING TO VARY HERE',
   meldungMerklisteNichtVariierbar: 'SHORTLIST CANNOT BE VARIED - PICK A THEME FIRST',
   mix: 'MIX',
@@ -402,7 +401,6 @@ const en: UiTexte = {
   meldungImportKaputt: 'THE FILE IS NOT A SHORTLIST',
   laufschrift: [
     'CODENAME GENERATOR',
-    'EVERYTHING RUNS IN YOUR BROWSER, NOTHING IS SENT ANYWHERE',
     'F KEEPS A NAME, O TAKES YOUR OWN WORD - THE SHORTLIST STAYS IN YOUR BROWSER',
     'W KEEPS THE WORD, M THE MODIFIER - HOME IN ON A NAME STEP BY STEP',
     'COINED WORDS, BLENDS, ACRONYMS - PLUS FILTERS FOR TONE, SYLLABLES AND SOUND',

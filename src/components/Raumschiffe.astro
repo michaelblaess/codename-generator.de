@@ -13,6 +13,12 @@
  * Die Wende ist der Uridium-Effekt: das Schiff laeuft zu einem Strich
  * zusammen und kommt kopfueber wieder heraus.
  *
+ * Gelegentlich statt eines Flugs ein Gefecht wie bei Space Invaders: oben
+ * ein Schiff mit der Nase nach unten, unten eines mit der Nase nach oben.
+ * Beide pendeln im Rand und schiessen senkrecht aufeinander, ein Treffer
+ * laesst das Schiff in Pixelsplitter zerfallen. Das Ereignis
+ * `raumschiffe:gefecht` auf document startet eines sofort (Smoketest).
+ *
  * Drei Bedingungen, sonst passiert gar nichts:
  *   - genug Rand: erst ab 1400px ist links und rechts Platz neben dem
  *     78rem breiten Bildschirmkasten. Auf dem Telefon fliegt nichts.
@@ -169,6 +175,93 @@
     }
   }
 
+  /* --- Gefecht ----------------------------------------------------------- */
+  .duell-schiff {
+    position: absolute;
+    width: calc(3.6rem * 0.8);
+    height: calc(3.45rem * 0.8);
+    perspective: 22rem;
+  }
+
+  /* Das obere Schiff fliegt mit der Nase nach unten. */
+  .duell-schiff[data-rolle='oben'] {
+    transform: rotate(180deg);
+  }
+
+  .duell-schiff.getroffen {
+    animation: getroffen 0.35s ease-in forwards;
+  }
+
+  .schuss {
+    position: absolute;
+    width: 3px;
+    height: 12px;
+    border-radius: 1px;
+  }
+
+  .schuss[data-von='oben'] {
+    background: #ff5fe8;
+    box-shadow: 0 0 6px #ff5fe8;
+  }
+
+  .schuss[data-von='unten'] {
+    background: #7dff9b;
+    box-shadow: 0 0 6px #7dff9b;
+  }
+
+  /* Pixelsplitter - bei 4px waren sie auf dem Schirm kaum zu sehen. */
+  .splitter {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    animation: splitter 1.1s ease-out forwards;
+  }
+
+  /* Kurzer Lichtblitz am Einschlag, dann fliegen die Splitter. */
+  .blitz {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    margin: -6px 0 0 -6px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #fff6dd 0%, #ff5fe8 45%, transparent 70%);
+    animation: blitz 0.45s ease-out forwards;
+  }
+
+  @keyframes blitz {
+    0% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(9);
+      opacity: 0;
+    }
+  }
+
+  @keyframes getroffen {
+    0% {
+      filter: brightness(3);
+      opacity: 1;
+    }
+    100% {
+      filter: brightness(3);
+      opacity: 0;
+      scale: 0.2;
+    }
+  }
+
+  @keyframes splitter {
+    0% {
+      transform: translate(0, 0);
+      opacity: 1;
+    }
+    100% {
+      transform: translate(var(--dx), var(--dy));
+      opacity: 0;
+    }
+  }
+
   @keyframes rolle {
     0%,
     100% {
@@ -305,18 +398,186 @@
     feld.appendChild(bahn);
   }
 
+  // --- Gefecht ---------------------------------------------------------------
+  // Erst ab so viel Rand: darunter bleibt fuer das Pendeln kaum Weg, und die
+  // Schiffe stuenden nur uebereinander.
+  const GEFECHT_MIN_RAND = 120;
+  const GEFECHT_HOECHSTENS = 16;
+  const SCHUSS_TEMPO = 560;
+  const SPLITTER_FARBEN = ['#fff6dd', '#e8b93f', '#c13bb0', '#ff5fe8'];
+
+  function schiffBauen(rolle) {
+    const el = document.createElement('div');
+    el.className = 'duell-schiff';
+    el.dataset.rolle = rolle;
+    const koerper = document.createElement('div');
+    koerper.className = 'schiffkoerper';
+    koerper.innerHTML = RUMPF;
+    el.appendChild(koerper);
+    feld.appendChild(el);
+    return el;
+  }
+
+  function zerplatzen(x, y) {
+    const blitz = document.createElement('div');
+    blitz.className = 'blitz';
+    blitz.style.left = `${x}px`;
+    blitz.style.top = `${y}px`;
+    blitz.addEventListener('animationend', () => blitz.remove());
+    feld.appendChild(blitz);
+    for (let i = 0; i < 24; i += 1) {
+      const teil = document.createElement('div');
+      teil.className = 'splitter';
+      const winkel = zufall(0, Math.PI * 2);
+      const weite = zufall(30, 110);
+      teil.style.left = `${x}px`;
+      teil.style.top = `${y}px`;
+      teil.style.background = SPLITTER_FARBEN[i % SPLITTER_FARBEN.length];
+      teil.style.setProperty('--dx', `${Math.cos(winkel) * weite}px`);
+      teil.style.setProperty('--dy', `${Math.sin(winkel) * weite}px`);
+      teil.addEventListener('animationend', () => teil.remove());
+      feld.appendChild(teil);
+    }
+  }
+
+  function gefechtStarten() {
+    if (!feld || ruhig.matches || !breit.matches || document.hidden) return false;
+    const rand = (window.innerWidth - 78 * 16) / 2;
+    if (rand < GEFECHT_MIN_RAND) return false;
+    const frei_seiten = ['links', 'rechts'].filter((s) => !belegt.has(s));
+    if (frei_seiten.length === 0) return false;
+    const seite = frei_seiten[Math.floor(Math.random() * frei_seiten.length)];
+    belegt.add(seite);
+
+    const hoehe = window.innerHeight;
+    const probe = schiffBauen('unten');
+    const breite = probe.offsetWidth;
+    const hoch = probe.offsetHeight;
+    probe.remove();
+    // Pendelbereich im Rand, mit etwas Abstand zu Fensterkante und Kasten.
+    const anfang = (seite === 'links' ? 0 : window.innerWidth - rand) + 8;
+    const spiel = Math.max(0, rand - breite - 16);
+    const mitte = anfang + spiel / 2;
+
+    const schiffe = ['oben', 'unten'].map((rolle) => ({
+      rolle,
+      el: schiffBauen(rolle),
+      x: mitte,
+      y: rolle === 'oben' ? -hoch - 10 : hoehe + 10,
+      ziel: rolle === 'oben' ? hoehe * 0.08 : hoehe * 0.92 - hoch,
+      takt: zufall(1.1, 1.9),
+      phase: zufall(0, Math.PI * 2),
+      laden: zufall(0.8, 1.6),
+      lebt: true,
+    }));
+    const schuesse = [];
+    let zeit = 0;
+    let ende = null;
+    let vorher = performance.now();
+
+    function zeichnen(s) {
+      s.el.style.left = `${s.x}px`;
+      s.el.style.top = `${s.y}px`;
+    }
+
+    function feuern(s) {
+      const el = document.createElement('div');
+      el.className = 'schuss';
+      el.dataset.von = s.rolle;
+      feld.appendChild(el);
+      schuesse.push({
+        el,
+        von: s.rolle,
+        x: s.x + breite / 2 - 1.5,
+        y: s.rolle === 'oben' ? s.y + hoch : s.y - 12,
+        vy: s.rolle === 'oben' ? SCHUSS_TEMPO : -SCHUSS_TEMPO,
+      });
+    }
+
+    function schritt(jetzt) {
+      // Nach einem verborgenen Tab kaeme sonst ein Riesenschritt auf einmal.
+      const dt = Math.min(0.05, (jetzt - vorher) / 1000);
+      vorher = jetzt;
+      zeit += dt;
+
+      for (const s of schiffe) {
+        if (!s.lebt) continue;
+        if (ende === null) {
+          // Einflug in gut einer Sekunde, dann pendeln wie ein Invader.
+          const einflug = Math.min(1, zeit / 1.2);
+          const start = s.rolle === 'oben' ? -hoch - 10 : hoehe + 10;
+          s.y = start + (s.ziel - start) * (1 - (1 - einflug) ** 3);
+          s.x = mitte + (spiel / 2) * Math.sin(zeit * s.takt + s.phase);
+          s.laden -= dt;
+          const gegner = schiffe.find((g) => g !== s);
+          const auf_linie = gegner.lebt && Math.abs(gegner.x - s.x) < breite * 0.5;
+          if (einflug >= 1 && s.laden <= 0 && (auf_linie || Math.random() < 0.3)) {
+            feuern(s);
+            s.laden = zufall(0.7, 1.4);
+          }
+        } else {
+          // Rueckzug dorthin, woher das Schiff kam.
+          s.y += (s.rolle === 'oben' ? -320 : 320) * dt;
+        }
+        zeichnen(s);
+      }
+
+      for (const schuss of [...schuesse]) {
+        schuss.y += schuss.vy * dt;
+        schuss.el.style.left = `${schuss.x}px`;
+        schuss.el.style.top = `${schuss.y}px`;
+        const ziel = schiffe.find((s) => s.rolle !== schuss.von);
+        const treffer =
+          ende === null &&
+          ziel.lebt &&
+          schuss.x + 3 > ziel.x + 6 &&
+          schuss.x < ziel.x + breite - 6 &&
+          schuss.y + 12 > ziel.y + 6 &&
+          schuss.y < ziel.y + hoch - 6;
+        if (treffer) {
+          ziel.lebt = false;
+          ziel.el.classList.add('getroffen');
+          zerplatzen(ziel.x + breite / 2, ziel.y + hoch / 2);
+          ende = zeit;
+        }
+        if (treffer || schuss.y < -20 || schuss.y > hoehe + 20) {
+          schuss.el.remove();
+          schuesse.splice(schuesse.indexOf(schuss), 1);
+        }
+      }
+
+      if (ende === null && zeit > GEFECHT_HOECHSTENS) ende = zeit;
+      const draussen = schiffe.every((s) => !s.lebt || s.y < -hoch - 20 || s.y > hoehe + 20);
+      if (ende !== null && schuesse.length === 0 && (draussen || zeit - ende > 6)) {
+        for (const s of schiffe) s.el.remove();
+        belegt.delete(seite);
+        return;
+      }
+      window.requestAnimationFrame(schritt);
+    }
+
+    for (const s of schiffe) zeichnen(s);
+    window.requestAnimationFrame(schritt);
+    return true;
+  }
+
   function planen() {
     // Oefter als zuvor, aber kein Dauerbetrieb. Gelegentlich zwei kurz
     // hintereinander - das sieht nach Verkehr aus statt nach Taktgeber.
+    // Etwa jeder dritte Auftritt ist ein Gefecht, sofern der Rand reicht.
     window.setTimeout(
       () => {
-        starten();
-        if (Math.random() < 0.35) window.setTimeout(starten, zufall(900, 2600));
+        if (!(Math.random() < 0.33 && gefechtStarten())) {
+          starten();
+          if (Math.random() < 0.35) window.setTimeout(starten, zufall(900, 2600));
+        }
         planen();
       },
       zufall(9000, 26000),
     );
   }
+
+  document.addEventListener('raumschiffe:gefecht', () => gefechtStarten());
 
   if (feld && !ruhig.matches && breit.matches) {
     window.setTimeout(starten, 4000);

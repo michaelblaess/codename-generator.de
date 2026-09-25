@@ -62,7 +62,7 @@ tracking, nothing leaves the page.
   exactly that batch.
 - **Two interface languages.** German lives at `/`, English at `/en/`, both built from
   one dictionary (`src/i18n/ui.ts`). The interface language is separate from the language
-  of the generated names, which stays switchable in the panel.
+  of the generated names, which starts in English and stays switchable in the panel.
 - **Legal pages** for the German requirements: imprint under § 5 DDG and a privacy policy
   that describes what the site actually does - no cookies, no analytics, localStorage only
   for the shortlist and only after you keep your first name. The smoketest measures those
@@ -133,6 +133,11 @@ The current look follows **Goldrunner** (Atari ST, 1987): black ground, gold, ma
 and green, copper bars along the top edge. On a desktop the whole page fits one screen -
 the lists scroll inside their boxes, the page itself does not. Below 1024 px the page
 scrolls instead, so the lists keep their height on a phone.
+
+From 1400 px width small gold ships fly in the free margins, turning at the top with the
+Uridium flip. Now and then two of them fight Space Invaders style instead: one at the top
+nose down, one at the bottom nose up, shooting at each other until one bursts into pixels.
+Nothing moves with `prefers-reduced-motion`.
 
 The earlier C64 look with rainbow copper bars is kept as a fallback and can be checked
 out at the tag `design-c64-copperbars`.

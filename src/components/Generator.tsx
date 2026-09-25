@@ -118,11 +118,11 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
   // beide setzen im selben Durchlauf das Thema, der Abgleich gewinnt, und der
   // Permalink lieferte einen anderen Stapel.
   const [start] = useState(() => readUrlState());
-  // Die Namenssprache startet in der Sprache der Oberflaeche, bleibt aber
-  // getrennt umschaltbar.
+  // Die Namenssprache startet immer auf Englisch (Michael, 25.09.2026) -
+  // auch unter der deutschen Oberflaeche. Umschaltbar bleibt sie.
   const [language, setLanguage] = useState<string>(() => {
     if (start?.language && LANGUAGES.includes(start.language)) return start.language;
-    return LANGUAGES.includes(sprache) ? sprache : DEFAULT_LANGUAGE;
+    return DEFAULT_LANGUAGE;
   });
   const [themeSlug, setThemeSlug] = useState<string>(() =>
     start?.theme && themeBySlug(start.theme) ? start.theme : 'random',

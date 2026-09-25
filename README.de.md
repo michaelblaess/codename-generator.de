@@ -66,7 +66,8 @@ Browser - kein Backend, kein Tracking, nichts verlässt die Seite.
   genau diesen Stapel wieder erzeugt.
 - **Zwei Oberflächensprachen.** Deutsch liegt unter `/`, Englisch unter `/en/`, beide aus
   einem Wörterbuch (`src/i18n/ui.ts`). Die Oberflächensprache ist unabhängig von der
-  Sprache der erzeugten Namen, die im Bedienfeld umschaltbar bleibt.
+  Sprache der erzeugten Namen. Die startet auf Englisch und bleibt im Bedienfeld
+  umschaltbar.
 - **Rechtsseiten**: Impressum nach § 5 DDG und eine Datenschutzerklärung, die beschreibt,
   was die Seite wirklich tut - keine Cookies, keine Statistik, localStorage nur für die
   Merkliste und erst nach dem ersten Merken. Der Smoketest misst diese Aussagen nach,
@@ -137,6 +138,11 @@ Die Optik folgt **Goldrunner** (Atari ST, 1987): schwarzer Grund, Gold, Magenta 
 Grün, Copper-Balken an der Oberkante. Am Desktop passt die Seite in einen Bildschirm - die
 Listen rollen in ihren Kästen, die Seite selbst nicht. Unter 1024 px rollt stattdessen die
 Seite, damit die Listen auf dem Handy ihre Höhe behalten.
+
+Ab 1400 px Breite fliegen in den freien Rändern kleine goldene Schiffe, oben wenden sie mit
+dem Uridium-Effekt. Ab und zu kämpfen stattdessen zwei wie bei Space Invaders: oben eines
+mit der Nase nach unten, unten eines mit der Nase nach oben, sie schießen aufeinander, bis
+eines in Pixel zerplatzt. Bei `prefers-reduced-motion` bewegt sich nichts.
 
 Die frühere C64-Fassung mit den Regenbogen-Copper-Balken bleibt als Rückfallebene
 erhalten und liegt auf dem Tag `design-c64-copperbars`.

@@ -826,6 +826,64 @@ pruefe(
   `keine Kollision in 25 s (${ueberschneidungen} Ueberschneidungen, hoechstens ${meisten} Schiffe gleichzeitig)`,
 );
 
+// 11d. Gefecht: oben ein Schiff mit der Nase nach unten, unten eines mit der
+//      Nase nach oben, Schuesse dazwischen, am Ende ein Treffer oder der
+//      Rueckzug - und alles im freien Rand. Das Ereignis startet es sofort,
+//      aber nur auf einer freien Seite, daher der Wiederholversuch.
+const bisGefecht = Date.now() + 20000;
+while (Date.now() < bisGefecht && (await seite.locator('.duell-schiff').count()) === 0) {
+  await seite.evaluate(() => document.dispatchEvent(new Event('raumschiffe:gefecht')));
+  await seite.waitForTimeout(400);
+}
+const gefechtDa = (await seite.locator('.duell-schiff').count()) === 2;
+pruefe(gefechtDa, 'ein Gefecht startet mit zwei Schiffen');
+if (gefechtDa) {
+  const kastenGefecht = await seite.locator('.bildschirm').boundingBox();
+  const hoeheFenster = seite.viewportSize().height;
+  let schuesseGesehen = 0;
+  let splitterGesehen = 0;
+  let imKasten = 0;
+  let lage = null;
+  const bisEnde = Date.now() + 24000;
+  while (Date.now() < bisEnde) {
+    const stand = await seite.evaluate(() => ({
+      schiffe: [...document.querySelectorAll('.duell-schiff')].map((el) => {
+        const k = el.getBoundingClientRect();
+        return { rolle: el.dataset.rolle, x: k.x, y: k.y, w: k.width, h: k.height, dreh: new DOMMatrixReadOnly(getComputedStyle(el).transform).a };
+      }),
+      schuesse: [...document.querySelectorAll('.schuss')].map((el) => el.getBoundingClientRect().x),
+      splitter: document.querySelectorAll('.splitter').length,
+    }));
+    if (stand.schiffe.length === 0 && stand.schuesse.length === 0 && stand.splitter === 0) break;
+    schuesseGesehen = Math.max(schuesseGesehen, stand.schuesse.length);
+    splitterGesehen = Math.max(splitterGesehen, stand.splitter);
+    for (const s of stand.schiffe) {
+      if (s.x + s.w > kastenGefecht.x + 1 && s.x < kastenGefecht.x + kastenGefecht.width - 1) imKasten++;
+    }
+    for (const x of stand.schuesse) {
+      if (x > kastenGefecht.x && x < kastenGefecht.x + kastenGefecht.width) imKasten++;
+    }
+    if (lage === null && stand.schiffe.length === 2) {
+      const oben = stand.schiffe.find((s) => s.rolle === 'oben');
+      const unten = stand.schiffe.find((s) => s.rolle === 'unten');
+      if (oben.y > 0 && unten.y + unten.h < hoeheFenster) lage = { oben, unten };
+    }
+    await seite.waitForTimeout(100);
+  }
+  const reste = await seite.locator('.duell-schiff, .schuss, .splitter, .blitz').count();
+  pruefe(
+    lage !== null &&
+      lage.oben.y < hoeheFenster * 0.2 &&
+      lage.unten.y > hoeheFenster * 0.7 &&
+      lage.oben.dreh < -0.9 &&
+      lage.unten.dreh > 0.9,
+    `oben kopfueber, unten aufrecht (oben y ${Math.round(lage?.oben.y ?? -1)}, unten y ${Math.round(lage?.unten.y ?? -1)})`,
+  );
+  pruefe(schuesseGesehen > 0, `es wird geschossen (bis zu ${schuesseGesehen} Schuesse gleichzeitig)`);
+  pruefe(imKasten === 0, `Gefecht bleibt im Rand (${imKasten} Messungen ueber dem Kasten)`);
+  pruefe(reste === 0, `Gefecht raeumt auf (${reste} Reste), Splitter gesehen: ${splitterGesehen}`);
+}
+
 // 11c. Der Cursor hinter READY. ist eine volle Zeichenzelle, wie auf dem C64 -
 //      er war schon einmal schmaler als die Schrift daneben.
 // Gemessen wird gegen die TINTE der Glyphen, nicht gegen die Zeilenhoehe.
