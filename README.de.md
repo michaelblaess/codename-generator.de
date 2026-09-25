@@ -151,7 +151,7 @@ erhalten und liegt auf dem Tag `design-c64-copperbars`.
 
 Jeder Push auf `main` gleicht die Daten mit dem Python-Repo ab, fährt die Tests und baut.
 Das Ausliefern auf GitHub Pages startet von Hand (`workflow_dispatch`), bis Pages für das
-Repo eingeschaltet ist. `public/CNAME` zeigt auf die Produktivdomain.
+Repo eingeschaltet ist. Die Domain `codename-generator.de` ist noch nicht registriert, eine `public/CNAME` folgt mit ihr.
 
 ## Danksagung
 

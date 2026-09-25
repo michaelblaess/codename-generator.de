@@ -146,7 +146,7 @@ out at the tag `design-c64-copperbars`.
 
 Every push to `main` checks the data against the Python repo, runs the tests and builds.
 Deploying to GitHub Pages is started by hand (`workflow_dispatch`) until Pages is switched
-on for the repository. `public/CNAME` points at the production domain.
+on for the repository. The domain `codename-generator.de` is not registered yet, a `public/CNAME` follows with it.
 
 ## Credits
 
