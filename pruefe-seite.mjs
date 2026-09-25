@@ -801,6 +801,8 @@ if (schiffDa) {
 //      25 Sekunden lang alle Schiffe paarweise auf Ueberschneidung pruefen.
 let ueberschneidungen = 0;
 let meisten = 0;
+let leerSeit = null;
+let laengsteLeere = 0;
 const wacheBis = Date.now() + 25000;
 while (Date.now() < wacheBis) {
   const kaesten = await seite.evaluate(() =>
@@ -809,6 +811,13 @@ while (Date.now() < wacheBis) {
       return { x: k.x, y: k.y, w: k.width, h: k.height };
     }),
   );
+  const irgendeins = kaesten.length + (await seite.locator('.duell-schiff').count());
+  if (irgendeins === 0) {
+    leerSeit ??= Date.now();
+    laengsteLeere = Math.max(laengsteLeere, Date.now() - leerSeit);
+  } else {
+    leerSeit = null;
+  }
   meisten = Math.max(meisten, kaesten.length);
   for (let i = 0; i < kaesten.length; i++) {
     for (let j = i + 1; j < kaesten.length; j++) {
@@ -825,6 +834,8 @@ pruefe(
   ueberschneidungen === 0,
   `keine Kollision in 25 s (${ueberschneidungen} Ueberschneidungen, hoechstens ${meisten} Schiffe gleichzeitig)`,
 );
+// Vorher lagen bis zu 26 s zwischen zwei Starts - zehn Sekunden leerer Himmel.
+pruefe(laengsteLeere <= 5000, `keine lange Pause ohne Schiff (laengste ${(laengsteLeere / 1000).toFixed(1)} s)`);
 
 // 11d. Gefecht: oben ein Schiff mit der Nase nach unten, unten eines mit der
 //      Nase nach oben, Schuesse dazwischen, am Ende ein Treffer oder der
@@ -844,7 +855,10 @@ if (gefechtDa) {
   let splitterGesehen = 0;
   let imKasten = 0;
   let lage = null;
-  const bisEnde = Date.now() + 24000;
+  let ersteLuecke = null;
+  let kleinsteLuecke = Infinity;
+  let beruehrt = 0;
+  const bisEnde = Date.now() + 30000;
   while (Date.now() < bisEnde) {
     const stand = await seite.evaluate(() => ({
       schiffe: [...document.querySelectorAll('.duell-schiff')].map((el) => {
@@ -863,6 +877,15 @@ if (gefechtDa) {
     for (const x of stand.schuesse) {
       if (x > kastenGefecht.x && x < kastenGefecht.x + kastenGefecht.width) imKasten++;
     }
+    if (stand.schiffe.length === 2) {
+      const [a, b] = stand.schiffe;
+      const o = a.rolle === 'oben' ? a : b;
+      const u = a.rolle === 'oben' ? b : a;
+      const luecke = u.y - (o.y + o.h);
+      if (o.y > 0 && ersteLuecke === null) ersteLuecke = luecke;
+      kleinsteLuecke = Math.min(kleinsteLuecke, luecke);
+      if (a.x < b.x + b.w - 4 && a.x + a.w - 4 > b.x && a.y < b.y + b.h - 4 && a.y + a.h - 4 > b.y) beruehrt++;
+    }
     if (lage === null && stand.schiffe.length === 2) {
       const oben = stand.schiffe.find((s) => s.rolle === 'oben');
       const unten = stand.schiffe.find((s) => s.rolle === 'unten');
@@ -880,6 +903,12 @@ if (gefechtDa) {
     `oben kopfueber, unten aufrecht (oben y ${Math.round(lage?.oben.y ?? -1)}, unten y ${Math.round(lage?.unten.y ?? -1)})`,
   );
   pruefe(schuesseGesehen > 0, `es wird geschossen (bis zu ${schuesseGesehen} Schuesse gleichzeitig)`);
+  // Kein Pong: die Schiffe muessen sich naeher kommen, ohne sich zu beruehren.
+  pruefe(
+    ersteLuecke !== null && kleinsteLuecke < ersteLuecke * 0.5,
+    `Schiffe fliegen aufeinander zu (Abstand ${Math.round(ersteLuecke ?? -1)} -> ${Math.round(kleinsteLuecke)} px)`,
+  );
+  pruefe(beruehrt === 0, `Schiffe beruehren sich nie (${beruehrt} Messungen)`);
   pruefe(imKasten === 0, `Gefecht bleibt im Rand (${imKasten} Messungen ueber dem Kasten)`);
   pruefe(reste === 0, `Gefecht raeumt auf (${reste} Reste), Splitter gesehen: ${splitterGesehen}`);
 }

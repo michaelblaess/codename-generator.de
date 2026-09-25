@@ -14,9 +14,11 @@
  * zusammen und kommt kopfueber wieder heraus.
  *
  * Gelegentlich statt eines Flugs ein Gefecht wie bei Space Invaders: oben
- * ein Schiff mit der Nase nach unten, unten eines mit der Nase nach oben.
- * Beide pendeln im Rand und schiessen senkrecht aufeinander, ein Treffer
- * laesst das Schiff in Pixelsplitter zerfallen. Das Ereignis
+ * kommt ein Schiff mit der Nase nach unten herein, unten eines mit der Nase
+ * nach oben. Sie fliegen aufeinander zu und schiessen dabei, je naeher, desto
+ * sicherer der Treffer - der zerlegt das Schiff in Pixelsplitter. Ueberleben
+ * beide, weichen sie kurz vor der Begegnung seitlich aus und fliegen
+ * aneinander vorbei aus dem Bild. Das Ereignis
  * `raumschiffe:gefecht` auf document startet eines sofort (Smoketest).
  *
  * Drei Bedingungen, sonst passiert gar nichts:
@@ -402,7 +404,10 @@
   // Erst ab so viel Rand: darunter bleibt fuer das Pendeln kaum Weg, und die
   // Schiffe stuenden nur uebereinander.
   const GEFECHT_MIN_RAND = 120;
-  const GEFECHT_HOECHSTENS = 16;
+  // Sicherheitsnetz, falls ein Schiff aus irgendeinem Grund nie hinausfliegt.
+  const GEFECHT_HOECHSTENS = 25;
+  // So lange braucht ein Schiff von Rand zu Rand, die Begegnung liegt in der Mitte.
+  const GEFECHT_FLUGZEIT = 9;
   const SCHUSS_TEMPO = 560;
   const SPLITTER_FARBEN = ['#fff6dd', '#e8b93f', '#c13bb0', '#ff5fe8'];
 
@@ -459,17 +464,23 @@
     const spiel = Math.max(0, rand - breite - 16);
     const mitte = anfang + spiel / 2;
 
+    const tempo = (hoehe + 2 * hoch + 20) / GEFECHT_FLUGZEIT;
     const schiffe = ['oben', 'unten'].map((rolle) => ({
       rolle,
       el: schiffBauen(rolle),
       x: mitte,
       y: rolle === 'oben' ? -hoch - 10 : hoehe + 10,
-      ziel: rolle === 'oben' ? hoehe * 0.08 : hoehe * 0.92 - hoch,
+      vy: rolle === 'oben' ? tempo : -tempo,
+      // Ausweichbahn fuer die Begegnung: oben links, unten rechts im Rand.
+      bahn: rolle === 'oben' ? anfang : anfang + spiel,
       takt: zufall(1.1, 1.9),
       phase: zufall(0, Math.PI * 2),
-      laden: zufall(0.8, 1.6),
+      laden: zufall(0.4, 0.9),
       lebt: true,
+      // Steht das Schiff einmal auf seiner Ausweichbahn, bleibt es dort.
+      gebunden: false,
     }));
+    const [oben, unten] = schiffe;
     const schuesse = [];
     let zeit = 0;
     let ende = null;
@@ -500,24 +511,27 @@
       vorher = jetzt;
       zeit += dt;
 
+      // Abstand zwischen Nase und Nase. Wird er klein, weichen beide auf ihre
+      // Bahn aus, sonst stiessen sie zusammen. Nach der Begegnung bleiben sie
+      // dort und fliegen aneinander vorbei hinaus.
+      const luecke = unten.y - (oben.y + hoch);
+      const beide = oben.lebt && unten.lebt;
+      const ausweichen = beide ? Math.min(1, Math.max(0, 1 - luecke / (3 * hoch))) : 0;
       for (const s of schiffe) {
         if (!s.lebt) continue;
-        if (ende === null) {
-          // Einflug in gut einer Sekunde, dann pendeln wie ein Invader.
-          const einflug = Math.min(1, zeit / 1.2);
-          const start = s.rolle === 'oben' ? -hoch - 10 : hoehe + 10;
-          s.y = start + (s.ziel - start) * (1 - (1 - einflug) ** 3);
-          s.x = mitte + (spiel / 2) * Math.sin(zeit * s.takt + s.phase);
-          s.laden -= dt;
-          const gegner = schiffe.find((g) => g !== s);
-          const auf_linie = gegner.lebt && Math.abs(gegner.x - s.x) < breite * 0.5;
-          if (einflug >= 1 && s.laden <= 0 && (auf_linie || Math.random() < 0.3)) {
-            feuern(s);
-            s.laden = zufall(0.7, 1.4);
-          }
-        } else {
-          // Rueckzug dorthin, woher das Schiff kam.
-          s.y += (s.rolle === 'oben' ? -320 : 320) * dt;
+        s.y += s.vy * dt;
+        const pendel = mitte + (spiel / 2) * Math.sin(zeit * s.takt + s.phase);
+        // Nach einem Abschuss behaelt der Sieger seine Bahn, er pendelt nicht zurueck.
+        if (!s.gebunden) s.x = pendel + (s.bahn - pendel) * ausweichen;
+        if (ausweichen >= 1) s.gebunden = true;
+        const gegner = schiffe.find((g) => g !== s);
+        // Geschossen wird nur im Anflug - nach der Begegnung zeigt die Nase weg.
+        const im_anflug = gegner.lebt && luecke > hoch && ende === null;
+        s.laden -= dt;
+        const auf_linie = Math.abs(gegner.x - s.x) < breite * 0.6;
+        if (im_anflug && s.laden <= 0 && (auf_linie || Math.random() < 0.25)) {
+          feuern(s);
+          s.laden = zufall(0.5, 1.0);
         }
         zeichnen(s);
       }
@@ -546,9 +560,10 @@
         }
       }
 
-      if (ende === null && zeit > GEFECHT_HOECHSTENS) ende = zeit;
-      const draussen = schiffe.every((s) => !s.lebt || s.y < -hoch - 20 || s.y > hoehe + 20);
-      if (ende !== null && schuesse.length === 0 && (draussen || zeit - ende > 6)) {
+      const draussen = schiffe.every(
+        (s) => !s.lebt || (s.rolle === 'oben' ? s.y > hoehe + 20 : s.y < -hoch - 20),
+      );
+      if (schuesse.length === 0 && (draussen || zeit > GEFECHT_HOECHSTENS)) {
         for (const s of schiffe) s.el.remove();
         belegt.delete(seite);
         return;
@@ -562,8 +577,10 @@
   }
 
   function planen() {
-    // Oefter als zuvor, aber kein Dauerbetrieb. Gelegentlich zwei kurz
-    // hintereinander - das sieht nach Verkehr aus statt nach Taktgeber.
+    // Dichter Verkehr: alle 3 bis 8 Sekunden ein Startversuch. Ein Flug
+    // dauert 13 bis 19 Sekunden und belegt seine Seite, so ist fast immer ein
+    // Schiff unterwegs (vorher lagen 9 bis 26 Sekunden zwischen den Starts,
+    // und es gab Pausen von zehn Sekunden ohne jedes Schiff).
     // Etwa jeder dritte Auftritt ist ein Gefecht, sofern der Rand reicht.
     window.setTimeout(
       () => {
@@ -573,14 +590,14 @@
         }
         planen();
       },
-      zufall(9000, 26000),
+      zufall(3000, 8000),
     );
   }
 
   document.addEventListener('raumschiffe:gefecht', () => gefechtStarten());
 
   if (feld && !ruhig.matches && breit.matches) {
-    window.setTimeout(starten, 4000);
+    window.setTimeout(starten, 1500);
     planen();
   }
 </script>
