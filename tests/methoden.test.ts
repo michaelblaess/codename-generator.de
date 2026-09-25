@@ -27,8 +27,8 @@ describe('Methoden', () => {
   });
 
   it('Kofferwoerter kreuzen mit dem Mix-Partner zwei Themen', () => {
-    const stapel = suggest({ themeSlug: 'whisky', mix: 'constellations', method: 'blend', seed: 5, wordCount: 1 });
-    expect(stapel.theme?.slug).toBe('blend-whisky-constellations');
+    const stapel = suggest({ themeSlug: 'mountains', mix: 'constellations', method: 'blend', seed: 5, wordCount: 1 });
+    expect(stapel.theme?.slug).toBe('blend-mountains-constellations');
     expect(stapel.suggestions.length).toBeGreaterThan(10);
   });
 
@@ -58,7 +58,7 @@ describe('Methoden', () => {
   });
 
   it('Mix geht ueber die Sprachgrenze', () => {
-    const stapel = suggest({ themeSlug: 'whisky', mix: 'tierwelt', language: 'en', seed: 2 });
+    const stapel = suggest({ themeSlug: 'mountains', mix: 'tierwelt', language: 'en', seed: 2 });
     const tiere = new Set((themeBySlug('tierwelt')?.words ?? []).map((w) => w.toLowerCase()));
     expect(stapel.recipes.length).toBe(20);
     expect(stapel.recipes.every((r) => tiere.has(r.themeWord.toLowerCase()))).toBe(true);

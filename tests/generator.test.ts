@@ -90,7 +90,7 @@ describe('Stapel', () => {
   });
 
   it('mutationChance 0 mutiert nichts', () => {
-    const { suggestions } = suggest({ themeSlug: 'whisky', count: 25, mutationChance: 0, seed: 5 });
+    const { suggestions } = suggest({ themeSlug: 'mountains', count: 25, mutationChance: 0, seed: 5 });
     expect(suggestions.every((s) => !s.mutated)).toBe(true);
   });
 
@@ -190,8 +190,8 @@ describe('Sprachen', () => {
 describe('Daten', () => {
   it('enthaelt die erwarteten Themes und Woerter', () => {
     const list = themes().filter((t) => !t.slug.startsWith('random'));
-    expect(list.length).toBe(23);
-    expect(list.reduce((n, t) => n + t.words.length, 0)).toBe(2638);
+    expect(list.length).toBe(21);
+    expect(list.reduce((n, t) => n + t.words.length, 0)).toBe(2403);
   });
 
   it('deutsche Themes fuehren ein Genus pro Wort', () => {

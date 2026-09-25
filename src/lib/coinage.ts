@@ -132,8 +132,8 @@ function editDistance(a: string, b: string): number {
 }
 
 /**
- * Verschmilzt zwei Woerter an einem gemeinsamen Buchstaben ("Orion" + "Taurus"
- * = "Orisker"). Gewinnt die Naht, deren Laenge am naechsten am Mittel liegt
+ * Verschmilzt zwei Woerter an einem gemeinsamen Buchstaben ("Orion" + "Andromeda"
+ * = "Oromeda"). Gewinnt die Naht, deren Laenge am naechsten am Mittel liegt
  * (hoechstens acht), dann eine Vokalnaht, dann mehr vom ersten Wort. Beinahe-Kopien
  * (ein Buchstabe Unterschied) zaehlen nicht.
  */

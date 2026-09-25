@@ -467,24 +467,24 @@ pruefe(
   'ein Thema in der Liste verlaesst die Varianten',
 );
 
-// 9g. Themen-Mix: Whisky x Sternbilder. Jede Zeile traegt ein Sternbild (aus
+// 9g. Themen-Mix: Berge x Sternbilder. Jede Zeile traegt ein Sternbild (aus
 //     den ausgelieferten Daten gelesen, nicht geraten), die Adresse den Mix,
-//     und "kein Mix" fuehrt zu reinen Whisky-Namen zurueck.
+//     und "kein Mix" fuehrt zu reinen Berg-Namen zurueck.
 const sternbilder = JSON.parse(readFileSync('src/data/themes.json', 'utf8'))
   .find((th) => th.slug === 'constellations')
   .words.map((w) => w.toUpperCase());
 const traegtStern = (zeile) => sternbilder.some((s) => ohneNummer(zeile).split(/\s+/).join(' ').includes(s));
-await seite.goto(`${URL_BASIS}?theme=whisky&mix=constellations&lang=en&seed=3&mut=0&words=2`, {
+await seite.goto(`${URL_BASIS}?theme=mountains&mix=constellations&lang=en&seed=3&mut=0&words=2`, {
   waitUntil: 'networkidle',
 });
 await held.waitFor({ timeout: 10000 });
 const mixZeilen = await seite.locator('ol li button').allInnerTexts();
 pruefe(
   (await seite.locator('#thema-mix').inputValue()) === 'constellations' &&
-    (await seite.locator('section p').first().innerText()).includes('WHISKY X CONSTELLATIONS') &&
+    (await seite.locator('section p').first().innerText()).includes('MOUNTAINS X CONSTELLATIONS') &&
     mixZeilen.length === 20 &&
     mixZeilen.every(traegtStern),
-  `Mix Whisky x Sternbilder: 20 Namen mit Sternbild (${ohneNummer(mixZeilen[0] ?? '')})`,
+  `Mix Berge x Sternbilder: 20 Namen mit Sternbild (${ohneNummer(mixZeilen[0] ?? '')})`,
 );
 await seite.getByRole('button', { name: 'ADRESSE KOPIEREN' }).click();
 await seite.waitForTimeout(300);
@@ -493,7 +493,7 @@ pruefe(mixAdresse.includes('mix=constellations'), `Adresse traegt den Mix (${mix
 await seite.locator('#thema-mix').selectOption('');
 await seite.waitForTimeout(300);
 const ohneMix = await seite.locator('ol li button').allInnerTexts();
-pruefe(!ohneMix.every(traegtStern), 'kein Mix fuehrt zu reinen Whisky-Namen zurueck');
+pruefe(!ohneMix.every(traegtStern), 'kein Mix fuehrt zu reinen Berg-Namen zurueck');
 
 // 9h. Methoden, Ton, Filter und Klang. Was die Knoepfe tun, wird am Ergebnis
 //     gemessen: Anfangsbuchstaben, Tonwoerter aus den ausgelieferten Daten,
@@ -841,13 +841,23 @@ pruefe(laengsteLeere <= 5000, `keine lange Pause ohne Schiff (laengste ${(laengs
 //      Nase nach oben, Schuesse dazwischen, am Ende ein Treffer oder der
 //      Rueckzug - und alles im freien Rand. Das Ereignis startet es sofort,
 //      aber nur auf einer freien Seite, daher der Wiederholversuch.
+// Verfolgt wird genau ein Gefecht, und zwar eines, das der Test selbst
+// ausgeloest hat - ein zufaellig laufendes kann schon ein Schiff verloren haben.
+const hoechsteKennung = () =>
+  seite.evaluate(() =>
+    Math.max(0, ...[...document.querySelectorAll('[data-gefecht]')].map((el) => Number(el.dataset.gefecht))),
+  );
+const kennungVorher = await hoechsteKennung();
 const bisGefecht = Date.now() + 20000;
-while (Date.now() < bisGefecht && (await seite.locator('.duell-schiff').count()) === 0) {
+while (Date.now() < bisGefecht && (await hoechsteKennung()) <= kennungVorher) {
   await seite.evaluate(() => document.dispatchEvent(new Event('raumschiffe:gefecht')));
   await seite.waitForTimeout(400);
 }
-const gefechtDa = (await seite.locator('.duell-schiff').count()) === 2;
-pruefe(gefechtDa, 'ein Gefecht startet mit zwei Schiffen');
+const neu = await hoechsteKennung();
+const kennung = neu > kennungVorher ? String(neu) : '';
+const imGefecht = `[data-gefecht="${kennung}"]`;
+const gefechtDa = kennung !== '' && (await seite.locator(`.duell-schiff${imGefecht}`).count()) === 2;
+pruefe(gefechtDa, `ein Gefecht startet mit zwei Schiffen (Gefecht ${kennung || '-'})`);
 if (gefechtDa) {
   const kastenGefecht = await seite.locator('.bildschirm').boundingBox();
   const hoeheFenster = seite.viewportSize().height;
@@ -858,16 +868,17 @@ if (gefechtDa) {
   let ersteLuecke = null;
   let kleinsteLuecke = Infinity;
   let beruehrt = 0;
+  let beruehrtNachTreffer = 0;
   const bisEnde = Date.now() + 30000;
   while (Date.now() < bisEnde) {
-    const stand = await seite.evaluate(() => ({
-      schiffe: [...document.querySelectorAll('.duell-schiff')].map((el) => {
+    const stand = await seite.evaluate((sel) => ({
+      schiffe: [...document.querySelectorAll(`.duell-schiff${sel}`)].map((el) => {
         const k = el.getBoundingClientRect();
-        return { rolle: el.dataset.rolle, x: k.x, y: k.y, w: k.width, h: k.height, dreh: new DOMMatrixReadOnly(getComputedStyle(el).transform).a };
+        return { rolle: el.dataset.rolle, x: k.x, y: k.y, w: k.width, h: k.height, dreh: new DOMMatrixReadOnly(getComputedStyle(el).transform).a, getroffen: el.classList.contains('getroffen') };
       }),
-      schuesse: [...document.querySelectorAll('.schuss')].map((el) => el.getBoundingClientRect().x),
-      splitter: document.querySelectorAll('.splitter').length,
-    }));
+      schuesse: [...document.querySelectorAll(`.schuss${sel}`)].map((el) => el.getBoundingClientRect().x),
+      splitter: document.querySelectorAll(`.splitter${sel}`).length,
+    }), imGefecht);
     if (stand.schiffe.length === 0 && stand.schuesse.length === 0 && stand.splitter === 0) break;
     schuesseGesehen = Math.max(schuesseGesehen, stand.schuesse.length);
     splitterGesehen = Math.max(splitterGesehen, stand.splitter);
@@ -884,7 +895,10 @@ if (gefechtDa) {
       const luecke = u.y - (o.y + o.h);
       if (o.y > 0 && ersteLuecke === null) ersteLuecke = luecke;
       kleinsteLuecke = Math.min(kleinsteLuecke, luecke);
-      if (a.x < b.x + b.w - 4 && a.x + a.w - 4 > b.x && a.y < b.y + b.h - 4 && a.y + a.h - 4 > b.y) beruehrt++;
+      if (a.x < b.x + b.w - 4 && a.x + a.w - 4 > b.x && a.y < b.y + b.h - 4 && a.y + a.h - 4 > b.y) {
+        beruehrt++;
+        if (a.getroffen || b.getroffen) beruehrtNachTreffer++;
+      }
     }
     if (lage === null && stand.schiffe.length === 2) {
       const oben = stand.schiffe.find((s) => s.rolle === 'oben');
@@ -893,7 +907,7 @@ if (gefechtDa) {
     }
     await seite.waitForTimeout(100);
   }
-  const reste = await seite.locator('.duell-schiff, .schuss, .splitter, .blitz').count();
+  const reste = await seite.locator(`${imGefecht}`).count();
   pruefe(
     lage !== null &&
       lage.oben.y < hoeheFenster * 0.2 &&
@@ -905,10 +919,12 @@ if (gefechtDa) {
   pruefe(schuesseGesehen > 0, `es wird geschossen (bis zu ${schuesseGesehen} Schuesse gleichzeitig)`);
   // Kein Pong: die Schiffe muessen sich naeher kommen, ohne sich zu beruehren.
   pruefe(
-    ersteLuecke !== null && kleinsteLuecke < ersteLuecke * 0.5,
+    // Bei Pong bliebe der Abstand gleich. Faellt der Treffer frueh, kommen
+    // sich die Schiffe nicht bis zur Begegnung nahe - 150 px reichen als Beleg.
+    ersteLuecke !== null && kleinsteLuecke < ersteLuecke - 150,
     `Schiffe fliegen aufeinander zu (Abstand ${Math.round(ersteLuecke ?? -1)} -> ${Math.round(kleinsteLuecke)} px)`,
   );
-  pruefe(beruehrt === 0, `Schiffe beruehren sich nie (${beruehrt} Messungen)`);
+  pruefe(beruehrt === 0, `Schiffe beruehren sich nie (${beruehrt} Messungen, davon ${beruehrtNachTreffer} mit einem abgeschossenen Schiff)`);
   pruefe(imKasten === 0, `Gefecht bleibt im Rand (${imKasten} Messungen ueber dem Kasten)`);
   pruefe(reste === 0, `Gefecht raeumt auf (${reste} Reste), Splitter gesehen: ${splitterGesehen}`);
 }

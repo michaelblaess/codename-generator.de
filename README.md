@@ -21,12 +21,12 @@ tracking, nothing leaves the page.
 
 ## What it does
 
-- **23 curated themes**, 2638 words: Greek/Egyptian/Norse gods, racehorses, whisky, wines,
+- **21 curated themes**, 2403 words: Greek/Egyptian/Norse gods, racehorses,
   mountains, landmarks, historic ships, animals, flowers, gemstones,
   mushrooms, air traffic control, dev verbs and more.
 - **English and German.** German inflects the modifier after the noun's gender, so you get
   `Stiller Falke`, `Stille Eule`, `Stilles Wiesel` - not a word-by-word translation. Themes
-  built from proper names (gods, racehorses, whisky) work in both languages.
+  built from proper names (gods, racehorses, mountains) work in both languages.
 - **Phonetic mutation** nudges a word off the dictionary: `Pegasus -> Pegasos`. A `*` marks
   a mutated suggestion.
 - **Your own word** (key `o`): your word is combined with the modifiers of the chosen
@@ -35,12 +35,12 @@ tracking, nothing leaves the page.
   a theme (`Sitemap Selene`, `Pollux Sitemap`), and `FRONT`/`BACK` decide where it
   stands. The address `?word=Sitemap&partner=greek-gods&pos=front` opens this view
   directly.
-- **Theme mix** (MIX above the list, address `?theme=whisky&mix=constellations`): the theme
-  is crossed with a second one, every name takes one word from each (`Rigel
-  Andromeda`). No word appears twice in a batch. Themes of the other language work too.
+- **Theme mix** (MIX above the list, address `?theme=mountains&mix=constellations`): the theme
+  is crossed with a second one, every name takes one word from each (`Matterhorn
+  Monoceros`). No word appears twice in a batch. Themes of the other language work too.
 - **Methods** (METHOD above the list): *theme words* is the classic way. *Coined words*
   invents new words that sound like the theme, *blends* melt two theme words at a shared
-  letter (`Orion` + `Taurus` = `Orisker`), with a mix the back half comes from the second
+  letter (`Orion` + `Andromeda` = `Oromeda`), with a mix the back half comes from the second
   theme. *Acronym* takes up to three letters, every word starts with its letter (`SM` ->
   `Stork Maker`). Address: `?method=acronym&letters=sm`.
 - **Tone and filters** (row above the list): TONE limits the modifiers to one mood (dark,

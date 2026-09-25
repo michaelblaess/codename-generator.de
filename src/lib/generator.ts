@@ -1026,7 +1026,7 @@ export function suggestVariants(options: VariantOptions): Stapel {
 }
 
 /**
- * Virtuelles Thema: zwei Themen gekreuzt ("Taurus Orion"). Technisch ein
+ * Virtuelles Thema: zwei Themen gekreuzt ("Matterhorn Orion"). Technisch ein
  * wechselnder Anker - das Wort aus `first` steht als Anker, das aus `second`
  * als Themenwort. Genus, Mutation und Sprache kommen von `second`.
  */

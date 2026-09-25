@@ -209,7 +209,7 @@ const de: UiTexte = {
   meldungMerklisteNichtVariierbar: 'MERKLISTE NICHT VARIIERBAR - ERST EIN THEMA WÄHLEN',
   mix: 'MIX',
   keinMix: 'kein Mix',
-  titelMix: 'Das Thema mit einem zweiten kreuzen - je ein Wort aus beiden, z.B. Snowdon Lepus',
+  titelMix: 'Das Thema mit einem zweiten kreuzen - je ein Wort aus beiden, z.B. Matterhorn Monoceros',
   methode: 'METHODE',
   methoden: {
     words: 'Themenwörter',
@@ -351,7 +351,7 @@ const en: UiTexte = {
   meldungMerklisteNichtVariierbar: 'SHORTLIST CANNOT BE VARIED - PICK A THEME FIRST',
   mix: 'MIX',
   keinMix: 'no mix',
-  titelMix: 'Cross the theme with a second one - one word from each, e.g. Snowdon Lepus',
+  titelMix: 'Cross the theme with a second one - one word from each, e.g. Matterhorn Monoceros',
   methode: 'METHOD',
   methoden: {
     words: 'theme words',

@@ -6,7 +6,7 @@ import { suggest, suggestVariants, themeBySlug } from '../src/lib/generator';
 
 describe('Themen-Mix', () => {
   it.each([
-    ['whisky', 'constellations', 'en'],
+    ['mountains', 'constellations', 'en'],
     ['tierwelt', 'greek-gods', 'de'],
   ] as const)('%s x %s: je ein Wort, keins doppelt', (first, second, language) => {
     const a = themeBySlug(first)!.words.map((w) => w.toLowerCase());
@@ -36,13 +36,13 @@ describe('Themen-Mix', () => {
   });
 
   it('mischt nicht mit sich selbst', () => {
-    const ohne = suggest({ themeSlug: 'whisky', seed: 1 });
-    const selbst = suggest({ themeSlug: 'whisky', mix: 'whisky', seed: 1 });
+    const ohne = suggest({ themeSlug: 'mountains', seed: 1 });
+    const selbst = suggest({ themeSlug: 'mountains', mix: 'mountains', seed: 1 });
     expect(selbst.suggestions.map((s) => s.name)).toEqual(ohne.suggestions.map((s) => s.name));
   });
 
   it('Zusatz halten behaelt das Wort aus dem ersten Thema', () => {
-    const stapel = suggest({ themeSlug: 'whisky', mix: 'constellations', seed: 4, mutationChance: 0 });
+    const stapel = suggest({ themeSlug: 'mountains', mix: 'constellations', seed: 4, mutationChance: 0 });
     const base = stapel.recipes[0];
     const { recipes } = suggestVariants({ base, theme: stapel.theme!, keep: 'modifier', count: 20, seed: 5 });
     expect(recipes).toHaveLength(20);

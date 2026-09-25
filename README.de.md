@@ -21,12 +21,12 @@ Browser - kein Backend, kein Tracking, nichts verlässt die Seite.
 
 ## Was die Seite kann
 
-- **23 kuratierte Themen**, 2638 Wörter: griechische/ägyptische/nordische Götter,
-  Rennpferde, Whisky, Weine, Berge, Wahrzeichen, historische Schiffe,
+- **21 kuratierte Themen**, 2403 Wörter: griechische/ägyptische/nordische Götter,
+  Rennpferde, Berge, Wahrzeichen, historische Schiffe,
   Tiere, Blumen, Edelsteine, Pilze, Flugsicherung, Dev-Verben und mehr.
 - **Englisch und Deutsch.** Deutsch beugt den Modifikator nach dem Genus des Substantivs,
   deshalb steht dort `Stiller Falke`, `Stille Eule`, `Stilles Wiesel` und keine
-  Wort-für-Wort-Übersetzung. Themen aus Eigennamen (Götter, Rennpferde, Whisky)
+  Wort-für-Wort-Übersetzung. Themen aus Eigennamen (Götter, Rennpferde, Berge)
   funktionieren in beiden Sprachen.
 - **Phonetische Mutation** schiebt ein Wort aus dem Wörterbuch heraus:
   `Pegasus -> Pegasos`. Ein `*` markiert einen mutierten Vorschlag.
@@ -36,13 +36,13 @@ Browser - kein Backend, kein Tracking, nichts verlässt die Seite.
   eines Themas kombinieren (`Sitemap Selene`, `Pollux Sitemap`), und `VORN`/`HINTEN`
   legen fest, wo es steht. Die Adresse `?word=Sitemap&partner=greek-gods&pos=front`
   öffnet direkt diese Ansicht.
-- **Themen-Mix** (MIX über der Liste, Adresse `?theme=whisky&mix=constellations`): Das Thema
+- **Themen-Mix** (MIX über der Liste, Adresse `?theme=mountains&mix=constellations`): Das Thema
   wird mit einem zweiten gekreuzt, jeder Name trägt je ein Wort aus beiden
-  (`Rigel Andromeda`). Kein Wort kommt im Stapel doppelt vor. Themen der anderen Sprache
+  (`Matterhorn Monoceros`). Kein Wort kommt im Stapel doppelt vor. Themen der anderen Sprache
   gehen auch.
 - **Methoden** (METHODE über der Liste): *Themenwörter* ist das bisherige Verfahren.
   *Kunstwörter* erfindet neue Wörter im Klang des Themas, *Kofferwörter* verschmelzen zwei
-  Themenwörter an einem gemeinsamen Buchstaben (`Orion` + `Taurus` = `Orisker`), mit Mix
+  Themenwörter an einem gemeinsamen Buchstaben (`Orion` + `Andromeda` = `Oromeda`), mit Mix
   kommt die hintere Hälfte aus dem zweiten Thema. *Akronym* nimmt bis zu drei Buchstaben,
   jedes Wort beginnt mit seinem (`SM` -> `Stork Maker`). Adresse:
   `?method=acronym&letters=sm`.

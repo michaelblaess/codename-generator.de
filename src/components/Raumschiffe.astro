@@ -411,10 +411,16 @@
   const SCHUSS_TEMPO = 560;
   const SPLITTER_FARBEN = ['#fff6dd', '#e8b93f', '#c13bb0', '#ff5fe8'];
 
-  function schiffBauen(rolle) {
+  // Jedes Gefecht traegt eine Kennung auf allen seinen Teilen - so kann der
+  // Smoketest genau eines verfolgen, auch wenn auf der anderen Seite gerade
+  // ein zweites laeuft.
+  let gefechtNummer = 0;
+
+  function schiffBauen(rolle, kennung) {
     const el = document.createElement('div');
     el.className = 'duell-schiff';
     el.dataset.rolle = rolle;
+    el.dataset.gefecht = kennung;
     const koerper = document.createElement('div');
     koerper.className = 'schiffkoerper';
     koerper.innerHTML = RUMPF;
@@ -423,9 +429,10 @@
     return el;
   }
 
-  function zerplatzen(x, y) {
+  function zerplatzen(x, y, kennung) {
     const blitz = document.createElement('div');
     blitz.className = 'blitz';
+    blitz.dataset.gefecht = kennung;
     blitz.style.left = `${x}px`;
     blitz.style.top = `${y}px`;
     blitz.addEventListener('animationend', () => blitz.remove());
@@ -433,6 +440,7 @@
     for (let i = 0; i < 24; i += 1) {
       const teil = document.createElement('div');
       teil.className = 'splitter';
+      teil.dataset.gefecht = kennung;
       const winkel = zufall(0, Math.PI * 2);
       const weite = zufall(30, 110);
       teil.style.left = `${x}px`;
@@ -453,9 +461,11 @@
     if (frei_seiten.length === 0) return false;
     const seite = frei_seiten[Math.floor(Math.random() * frei_seiten.length)];
     belegt.add(seite);
+    gefechtNummer += 1;
+    const kennung = String(gefechtNummer);
 
     const hoehe = window.innerHeight;
-    const probe = schiffBauen('unten');
+    const probe = schiffBauen('unten', kennung);
     const breite = probe.offsetWidth;
     const hoch = probe.offsetHeight;
     probe.remove();
@@ -467,7 +477,7 @@
     const tempo = (hoehe + 2 * hoch + 20) / GEFECHT_FLUGZEIT;
     const schiffe = ['oben', 'unten'].map((rolle) => ({
       rolle,
-      el: schiffBauen(rolle),
+      el: schiffBauen(rolle, kennung),
       x: mitte,
       y: rolle === 'oben' ? -hoch - 10 : hoehe + 10,
       vy: rolle === 'oben' ? tempo : -tempo,
@@ -495,6 +505,7 @@
       const el = document.createElement('div');
       el.className = 'schuss';
       el.dataset.von = s.rolle;
+      el.dataset.gefecht = kennung;
       feld.appendChild(el);
       schuesse.push({
         el,
@@ -550,8 +561,11 @@
           schuss.y < ziel.y + hoch - 6;
         if (treffer) {
           ziel.lebt = false;
+          // Nach dem Aufblitzen raus aus dem DOM - unsichtbar stehen gelassen lag
+          // das Wrack sonst im Weg, und der Sieger flog messbar hindurch.
+          ziel.el.addEventListener('animationend', () => ziel.el.remove(), { once: true });
           ziel.el.classList.add('getroffen');
-          zerplatzen(ziel.x + breite / 2, ziel.y + hoch / 2);
+          zerplatzen(ziel.x + breite / 2, ziel.y + hoch / 2, kennung);
           ende = zeit;
         }
         if (treffer || schuss.y < -20 || schuss.y > hoehe + 20) {
