@@ -208,6 +208,37 @@ async function main() {
   if (sprachen.length > 1) {
     pruefe('hreflang gesetzt', ohneHreflang.length === 0, ohneHreflang.join(', '));
     pruefe('hreflang x-default gesetzt', ohneXDefault.length === 0, ohneXDefault.join(', '));
+
+    // Ein hreflang auf eine Seite, die es nicht gibt, meldet die Search Console
+    // als 404 - so geschehen bei einem Beitrag ohne Uebersetzung. Der Basispfad
+    // (Seite unter einem Unterordner) ergibt sich aus der kanonischen Adresse
+    // der Startseite und wird vor dem Vergleich abgezogen.
+    const ohneSchraeg = (pfad) => pfad.replace(/\/+$/, '');
+    const pfadAus = (adresse) => {
+      try {
+        return decodeURI(new URL(adresse, 'https://gate.invalid').pathname);
+      } catch {
+        return adresse;
+      }
+    };
+    const startseite = seiten.find((s) => s.route === '/');
+    const startCanonical = startseite
+      ? ersterTreffer(startseite.html, /<link[^>]+rel=["']canonical["'][^>]*href=["']([^"']+)["']/i)
+      : null;
+    const basis = startCanonical ? ohneSchraeg(pfadAus(startCanonical)) : '';
+    const vorhanden = new Set(seiten.map((s) => ohneSchraeg(s.route)));
+    const toteZiele = [];
+    for (const seite of seiten) {
+      if (seite.route.startsWith('/404')) continue;
+      for (const [verweis] of seite.html.matchAll(/<link[^>]+hreflang=["'][^"']+["'][^>]*>/gi)) {
+        const ziel = ersterTreffer(verweis, /href=["']([^"']+)["']/i);
+        if (!ziel) continue;
+        let pfad = ohneSchraeg(pfadAus(ziel));
+        if (basis && (pfad === basis || pfad.startsWith(`${basis}/`))) pfad = pfad.slice(basis.length);
+        if (!vorhanden.has(pfad)) toteZiele.push(`${seite.route} -> ${ziel}`);
+      }
+    }
+    pruefe('hreflang-Ziele vorhanden', toteZiele.length === 0, [...new Set(toteZiele)].slice(0, 8).join(', '));
   }
   if (ausnahmen.ogImage) {
     pruefe('Teilervorschau (Ausnahme)', typeof ausnahmen.ogImage === 'string' && ausnahmen.ogImage.length > 10, ausnahmen.ogImage);
