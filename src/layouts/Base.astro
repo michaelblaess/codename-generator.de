@@ -36,6 +36,23 @@ const sprachen = seite
       { hreflang: 'x-default', href: new URL(pfad(seite, 'en'), Astro.site) },
     ]
   : [];
+// Strukturierte Daten nur auf der Startseite: sie sagen Suchmaschinen
+// maschinenlesbar, dass hier ein kostenloses Werkzeug im Browser laeuft.
+const anwendung = seite === 'start'
+  ? {
+      '@context': 'https://schema.org',
+      '@type': 'WebApplication',
+      name: 'Codename-Generator',
+      url: canonical.href,
+      description,
+      applicationCategory: 'DeveloperApplication',
+      operatingSystem: 'Any',
+      browserRequirements: 'JavaScript',
+      inLanguage: lang,
+      isAccessibleForFree: true,
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR' },
+    }
+  : null;
 ---
 
 <!doctype html>
@@ -48,6 +65,7 @@ const sprachen = seite
     <link rel="canonical" href={canonical} />
     <link rel="icon" href={favicon} type="image/svg+xml" />
     {sprachen.map((s) => <link rel="alternate" hreflang={s.hreflang} href={s.href} />)}
+    {anwendung && <script type="application/ld+json" set:html={JSON.stringify(anwendung)} />}
     <meta property="og:type" content="website" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />

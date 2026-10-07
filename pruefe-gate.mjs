@@ -215,6 +215,34 @@ async function main() {
     pruefe('Teilervorschau (og:title und og:image)', ohneTeiler.length === 0, ohneTeiler.join(', '));
   }
 
+  // --- Strukturierte Daten -------------------------------------------------
+  // Die Startseite jeder Sprache sagt maschinenlesbar, was sie ist (schema.org
+  // als JSON-LD). Welcher Typ passt, entscheidet das Projekt: WebApplication
+  // fuer ein Werkzeug, WebSite oder Person fuer eine Inhaltsseite. Geprueft
+  // wird nur, dass ein Block da ist, sich lesen laesst und einen Typ nennt.
+  if (ausnahmen.jsonLd) {
+    pruefe('Strukturierte Daten (Ausnahme)', typeof ausnahmen.jsonLd === 'string' && ausnahmen.jsonLd.length > 10, ausnahmen.jsonLd);
+  } else {
+    const startrouten = sprachen.length > 0
+      ? sprachen.map(([, prefix]) => (prefix ? `/${prefix}/` : '/'))
+      : ['/'];
+    const ohneDaten = startrouten.filter((r) => {
+      const start = seiten.find((s) => s.route === r);
+      if (!start) return true;
+      const bloecke = [...start.html.matchAll(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)];
+      return !bloecke.some(([, text]) => {
+        try {
+          const daten = JSON.parse(text);
+          const eintraege = Array.isArray(daten) ? daten : (daten['@graph'] ?? [daten]);
+          return eintraege.some((e) => e && e['@type']);
+        } catch {
+          return false;
+        }
+      });
+    });
+    pruefe('Strukturierte Daten auf der Startseite (JSON-LD)', ohneDaten.length === 0, ohneDaten.join(', '));
+  }
+
   // --- Pflichtbausteine im Markup ----------------------------------------
   // Eine Seite mit nur einer Optik (etwa ein Retro-Design auf Schwarz) schaltet
   // die Pruefung mit Begruendung ab - dieselbe Regel wie bei DMARC.
