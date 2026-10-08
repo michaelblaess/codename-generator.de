@@ -268,6 +268,40 @@ async function main() {
     pruefe('Teilervorschau (og:title und og:image)', ohneTeiler.length === 0, ohneTeiler.join(', '));
   }
 
+  // --- Interne Verweise ----------------------------------------------------
+  // Der Build legt Ordner an, die Seite heisst also /kontakt/. Ein Verweis auf
+  // /kontakt beantwortet der Server mit einer Umleitung - jeder Klick und jeder
+  // Crawl laeuft dann ueber eine 301, und die Search Console fuehrt die Adresse
+  // als "Seite mit Weiterleitung". Gemeldet wird ein Verweis nur, wenn es die
+  // Seite mit Schraegstrich wirklich gibt. Dateien (mit Endung) bleiben aussen vor.
+  {
+    const start = seiten.find((s) => s.route === '/');
+    const kanonisch = start
+      ? ersterTreffer(start.html, /<link[^>]+rel=["']canonical["'][^>]*href=["']([^"']+)["']/i)
+      : null;
+    let unterpfad = '';
+    try {
+      unterpfad = kanonisch ? new URL(kanonisch).pathname.replace(/\/+$/, '') : '';
+    } catch {
+      unterpfad = '';
+    }
+    const routen = new Set(seiten.map((s) => s.route));
+    const ohneSchluss = new Map();
+    for (const seite of seiten) {
+      for (const [, ziel] of seite.html.matchAll(/href=["'](\/[^"'#?]*)/g)) {
+        let pfad = ziel;
+        if (unterpfad && (pfad === unterpfad || pfad.startsWith(`${unterpfad}/`))) pfad = pfad.slice(unterpfad.length) || '/';
+        if (pfad.endsWith('/') || pfad.split('/').pop().includes('.')) continue;
+        if (routen.has(`${pfad}/`)) ohneSchluss.set(ziel, (ohneSchluss.get(ziel) ?? 0) + 1);
+      }
+    }
+    pruefe(
+      'Interne Verweise ohne Umleitung',
+      ohneSchluss.size === 0,
+      [...ohneSchluss].slice(0, 8).map(([ziel, anzahl]) => `${ziel} (${anzahl}x)`).join(', '),
+    );
+  }
+
   // --- Strukturierte Daten -------------------------------------------------
   // Die Startseite jeder Sprache sagt maschinenlesbar, was sie ist (schema.org
   // als JSON-LD). Welcher Typ passt, entscheidet das Projekt: WebApplication
