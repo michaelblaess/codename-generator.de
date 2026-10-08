@@ -104,10 +104,31 @@ async function main() {
     html: lies(datei),
   }));
 
-  // Die Fehlerseite ist sprachneutral und gehoert in keine Sprachzaehlung.
-  const inhaltsseiten = seiten.filter((s) => !s.route.startsWith('/404'));
-
   pruefe('Seiten gebaut', seiten.length > 0, `${seiten.length} HTML-Dateien`);
+
+  // --- Druckdokumente -----------------------------------------------------
+  // Eigenstaendige Dokumente (etwa ein Blatt zum Ausdrucken als HTML neben dem
+  // PDF) sind keine Seiten im Rahmen der Website. Titel, Beschreibung,
+  // kanonische Adresse, Teilervorschau, Rechtslinks und Copyright brauchen sie
+  // trotzdem. Was nur fuer Seiten im Rahmen gilt, entfaellt mit Begruendung:
+  // Sprachparitaet, hreflang, Hell/Dunkel-Umschalter und Einwilligung.
+  // Ein Praefix trifft nur, was darunter liegt, nicht die Seite am Praefix selbst.
+  const dokumente = konfig.dokumente ?? null;
+  const dokumentPraefixe = dokumente?.praefixe ?? [];
+  const istDokument = (r) => dokumentPraefixe.some((p) => r.startsWith(p) && r.length > p.length);
+  const rahmenseiten = seiten.filter((s) => !istDokument(s.route));
+  // Die Fehlerseite ist sprachneutral und gehoert in keine Sprachzaehlung,
+  // ein Druckdokument gibt es nur in einer Sprache.
+  const inhaltsseiten = rahmenseiten.filter((s) => !s.route.startsWith('/404'));
+  if (dokumente) {
+    const anzahl = seiten.length - rahmenseiten.length;
+    const begruendet = typeof dokumente.begruendung === 'string' && dokumente.begruendung.length > 10;
+    pruefe(
+      'Druckdokumente (Ausnahme)',
+      begruendet && anzahl > 0,
+      begruendet ? `${anzahl} Dateien unter ${dokumentPraefixe.join(', ')} - ${dokumente.begruendung}` : 'Begruendung fehlt',
+    );
+  }
 
   // --- Rechtsseiten -------------------------------------------------------
   const rechtsseiten = konfig.rechtsseiten ?? {};
@@ -171,8 +192,9 @@ async function main() {
     // kanonische Adresse noch Sprachverweise.
     if (seite.route.startsWith('/404')) continue;
     if (!/<link[^>]+rel=["']canonical["']/i.test(seite.html)) ohneCanonical.push(seite.route);
-    if (sprachen.length > 1 && !/hreflang=/i.test(seite.html)) ohneHreflang.push(seite.route);
-    if (sprachen.length > 1 && !/hreflang=["']x-default["']/i.test(seite.html)) {
+    const mehrsprachig = sprachen.length > 1 && !istDokument(seite.route);
+    if (mehrsprachig && !/hreflang=/i.test(seite.html)) ohneHreflang.push(seite.route);
+    if (mehrsprachig && !/hreflang=["']x-default["']/i.test(seite.html)) {
       ohneXDefault.push(seite.route);
     }
     // Ein geteilter Link ohne og:title und og:image erscheint als nackte
@@ -280,7 +302,7 @@ async function main() {
   if (ausnahmen.themeToggle) {
     pruefe('Hell/Dunkel-Umschalter (Ausnahme)', typeof ausnahmen.themeToggle === 'string' && ausnahmen.themeToggle.length > 10, ausnahmen.themeToggle);
   } else {
-    const ohneToggle = seiten.filter((s) => !s.html.includes(konfig.themeToggleKennung ?? 'data-theme-toggle'));
+    const ohneToggle = rahmenseiten.filter((s) => !s.html.includes(konfig.themeToggleKennung ?? 'data-theme-toggle'));
     pruefe('Hell/Dunkel-Umschalter', ohneToggle.length === 0, ohneToggle.map((s) => s.route).join(', '));
   }
 
@@ -333,7 +355,7 @@ async function main() {
 
   // --- Einwilligung -------------------------------------------------------
   if (konfig.zaehlung) {
-    const ohneBanner = seiten.filter((s) => !s.html.includes('cookieconsent') && !s.html.includes('data-einwilligung-oeffnen'));
+    const ohneBanner = rahmenseiten.filter((s) => !s.html.includes('cookieconsent') && !s.html.includes('data-einwilligung-oeffnen'));
     pruefe('Einwilligung eingebunden', ohneBanner.length === 0, ohneBanner.map((s) => s.route).join(', '));
     pruefe(
       'Einwilligung im Browser geprueft',
