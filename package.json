@@ -14,22 +14,25 @@
     "daten:pruefen": "node tools/sync-wordlists.mjs && git diff --exit-code -- src/data tests/vectors"
   },
   "dependencies": {
-    "@astrojs/react": "^7.0.0",
-    "@astrojs/sitemap": "^3.3.0",
-    "astro": "^7.2.4",
+    "@astrojs/react": "^7.0.1",
+    "@astrojs/sitemap": "^3.7.4",
+    "astro": "^7.3.8",
     "oxc-transform-react": "^0.145.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
     "retro-text-effects": "github:michaelblaess/retro-text-effects.js#v0.7.1"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "playwright-core": "^1.62.1",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "playwright-core": "^1.64.0",
     "tailwindcss": "^4.3.3",
-    "typescript": "^5.7.0",
-    "vitest": "^4.1.11",
-    "yaml": "^2.7.0"
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.3",
+    "yaml": "^2.9.1"
+  },
+  "overrides": {
+    "@vitejs/plugin-react": "6.1.1"
   }
 }
