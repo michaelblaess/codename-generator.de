@@ -62,6 +62,11 @@ Browser - kein Backend, kein Tracking, nichts verlässt die Seite.
   `--import-favorites` liest, `IMPORT` übernimmt eine Datei aus der TUI
   (`--export-favorites` oder direkt ihre `settings.json`). Beides läuft im Browser, nichts
   wird hochgeladen.
+- **Eigene Themen** (`+ EIGENES THEMA` unter der Themenliste): lädt eine YAML-Datei im
+  selben Format wie `~/.codename-generator/themes/` der TUI, eine Datei taugt also für
+  beide. Das Thema ist als *EIGEN* markiert und gilt bis zum Schließen der Seite - es wird im
+  Browser gelesen und nirgends gespeichert. Eine kaputte Datei, eine leere Wortliste oder der
+  Dateiname eines mitgelieferten Themas werden gemeldet statt geladen.
 - **Permalinks.** Jeder Stapel hat einen Seed - der Knopf `Link` kopiert eine URL, die
   genau diesen Stapel wieder erzeugt.
 - **Zwei Oberflächensprachen.** Deutsch liegt unter `/`, Englisch unter `/en/`, beide aus
@@ -124,6 +129,7 @@ src/lib/phonetic.ts    phonetische Mutation        (Port von phonetic.py)
 src/lib/coinage.ts     Kunst- und Kofferwörter       (Port von coinage.py)
 src/lib/scoring.ts     Silben, Klangwert, Filter     (Port von scoring.py)
 src/lib/merkliste.ts   Merkliste im localStorage, Export/Import
+src/lib/eigeneThemen.ts eigene Themen aus einer YAML-Datei (Format der TUI)
 src/lib/rng.ts         seedbarer Zufall (mulberry32)
 src/data/*.json        erzeugt, nicht editieren
 ```

@@ -64,6 +64,8 @@ export interface WordList {
   language: string;
   // Nur bei Zusatzlisten: Ton -> Woerter dieses Tons.
   tones?: Record<string, string[]>;
+  // Eigenes Thema aus einer Datei des Benutzers, nicht aus dem Paket.
+  custom?: boolean;
 }
 
 export interface Suggestion {
@@ -214,6 +216,24 @@ const ALL_THEMES: WordList[] = [
 
 export function themes(): WordList[] {
   return ALL_THEMES;
+}
+
+/** Kennungen, die eigene Themes nicht belegen duerfen (mitgelieferte und Random). */
+export function builtInSlugs(): Set<string> {
+  return new Set(ALL_THEMES.filter((t) => !t.custom).map((t) => t.slug));
+}
+
+/**
+ * Nimmt ein eigenes Thema auf oder ersetzt das gleichnamige eigene. Steht hinten,
+ * damit Random und die Reihenfolge der mitgelieferten Themes gleich bleiben.
+ */
+export function addCustomTheme(theme: WordList): void {
+  const index = ALL_THEMES.findIndex((t) => t.custom && t.slug === theme.slug);
+  if (index >= 0) {
+    ALL_THEMES[index] = theme;
+  } else {
+    ALL_THEMES.push(theme);
+  }
 }
 
 /** Themes der gewaehlten Sprache plus die neutralen (Eigennamen). */

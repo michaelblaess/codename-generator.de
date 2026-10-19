@@ -58,6 +58,11 @@ tracking, nothing leaves the page.
   the TUI uses for its favorites: `EXPORT` saves the list as a file the TUI reads with
   `--import-favorites`, `IMPORT` takes a file from the TUI (`--export-favorites`, or its
   `settings.json` directly). Both happen in the browser, nothing is uploaded.
+- **Own themes** (`+ OWN THEME` below the theme list): loads a YAML file in the same format
+  as the TUI's `~/.codename-generator/themes/`, so one file works in both. The theme is
+  marked *OWN* and lasts until you close the page - it is read in the browser and stored
+  nowhere. A broken file, an empty word list or the file name of a built-in theme are
+  reported instead of loaded.
 - **Permalinks.** Every batch has a seed - the `Link` button copies a URL that reproduces
   exactly that batch.
 - **Two interface languages.** German lives at `/`, English at `/en/`, both built from
@@ -119,6 +124,7 @@ src/lib/phonetic.ts    phonetic mutation                (port of phonetic.py)
 src/lib/coinage.ts     coined words and blends         (port of coinage.py)
 src/lib/scoring.ts     syllables, sound score, filters  (port of scoring.py)
 src/lib/merkliste.ts   shortlist in localStorage, export/import
+src/lib/eigeneThemen.ts own themes from a YAML file (same format as the TUI)
 src/lib/rng.ts         seedable RNG (mulberry32)
 src/data/*.json        generated, do not edit
 ```

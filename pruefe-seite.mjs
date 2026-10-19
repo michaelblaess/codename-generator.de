@@ -610,7 +610,7 @@ pruefe(
 await seite.locator('body').press('f');
 await seite.waitForTimeout(300);
 pruefe((await seite.locator('ol li button').count()) === 0, 'Merkliste nach dem Entfernen leer');
-await seite.locator('input[type="file"]').setInputFiles(exportPfad);
+await seite.locator('input[type="file"][accept^=".json"]').setInputFiles(exportPfad);
 await seite.waitForTimeout(400);
 const nachImport = await messeSpuren();
 pruefe(
@@ -1000,6 +1000,38 @@ if (koerper) {
     `Schiffsverhaeltnis ${verhaeltnis.toFixed(2)} (Entwurf ${(48 / 38).toFixed(2)})`,
   );
 }
+
+// Eigenes Thema aus einer YAML-Datei: erscheint als OWN, wuerfelt seine Woerter und
+// landet nicht im Browserspeicher - die Datenschutzerklaerung nennt nur die Merkliste.
+const eigen = await kontext.newPage();
+await eigen.goto(`${URL_BASIS}en/?mut=0`, { waitUntil: 'networkidle' });
+const speicherVorher = await eigen.evaluate(() => Object.keys(window.localStorage).sort());
+await eigen.locator('input[aria-label="+ OWN THEME"]').setInputFiles({
+  name: 'rivers.yaml',
+  mimeType: 'application/yaml',
+  buffer: Buffer.from('name: Rivers\nwords:\n  - Rhine\n  - Danube\n  - Elbe\n'),
+});
+const eintrag = eigen.getByRole('button', { name: /Rivers.*OWN/ });
+await eintrag.waitFor({ timeout: 5000 }).catch(() => {});
+pruefe(await eintrag.isVisible(), 'eigenes Thema steht als OWN in der Liste');
+pruefe((await eintrag.getAttribute('aria-current')) === 'true', 'eigenes Thema ist gleich aktiv');
+const heldText = (await eigen.locator('.held').innerText()).trim();
+pruefe(/Rhine|Danube|Elbe/i.test(heldText), `Name aus dem eigenen Thema (${heldText})`);
+const speicherNachher = await eigen.evaluate(() => Object.keys(window.localStorage).sort());
+pruefe(
+  JSON.stringify(speicherVorher) === JSON.stringify(speicherNachher),
+  `eigenes Thema nicht im localStorage (${speicherNachher.join(', ') || 'leer'})`,
+);
+await eigen.locator('input[aria-label="+ OWN THEME"]').setInputFiles({
+  name: 'mountains.yaml',
+  mimeType: 'application/yaml',
+  buffer: Buffer.from('name: Mine\nwords:\n  - Hill\n'),
+});
+pruefe(
+  await eigen.getByText('THE FILE NAME BELONGS TO A BUILT-IN THEME').first().isVisible(),
+  'belegte Kennung wird gemeldet',
+);
+await eigen.close();
 
 // Schmaler Schirm und reduzierte Bewegung: nichts fliegt.
 const eng = await kontext.newPage();

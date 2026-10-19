@@ -5,6 +5,7 @@ import {
   type AnchorPosition,
   DEFAULT_LANGUAGE,
   LANGUAGES,
+  NEUTRAL_LANGUAGE,
   METHODS,
   type Method,
   RANDOM_THEME_SLUG,
@@ -20,6 +21,8 @@ import {
   suggest,
   suggestSeeded,
   suggestVariants,
+  addCustomTheme,
+  builtInSlugs,
   themeBySlug,
   themes,
   visibleThemes,
@@ -32,6 +35,7 @@ import {
   leseImport,
   speichereMerkliste,
 } from '../lib/merkliste';
+import { leseEigenesThema } from '../lib/eigeneThemen';
 import { randomSeed } from '../lib/rng';
 import { type NameFilter, filterActive } from '../lib/scoring';
 import { UI, type UiSprache } from '../i18n/ui';
@@ -176,6 +180,9 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
     [anfang, silben, stabreim],
   );
   const importFeldRef = useRef<HTMLInputElement>(null);
+  const themaFeldRef = useRef<HTMLInputElement>(null);
+  // Zaehler fuer eigene Themes - die Liste der Themes lebt im Modul, nicht im State.
+  const [eigeneThemen, setEigeneThemen] = useState(0);
   const [idee, setIdee] = useState<string>('');
   // client:only - die Komponente laeuft nur im Browser, der Speicher ist also
   // schon beim ersten Rendern lesbar.
@@ -193,7 +200,11 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
   const aktivesThemaRef = useRef<HTMLButtonElement>(null);
   const firstRender = useRef(true);
 
-  const available: WordList[] = useMemo(() => visibleThemes(language), [language]);
+  const available: WordList[] = useMemo(
+    () => visibleThemes(language),
+    // eigeneThemen zaehlt mit, damit ein neu geladenes Thema in der Liste erscheint.
+    [language, eigeneThemen],
+  );
   const theme = themeBySlug(themeSlug);
 
   // Das Feld in der Kopfzeile uebernehmen. Der Platzhalter muss raus, sonst
@@ -539,6 +550,41 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
       aendereMerkliste(liste, t.meldungImportiert(hinzu, neu.length - hinzu));
     },
     [merkliste, aendereMerkliste, melde, t],
+  );
+
+  /** Ein eigenes Thema aus einer YAML-Datei - bleibt im Browser und wird nicht gespeichert. */
+  const themaLaden = useCallback(
+    async (datei: File | undefined) => {
+      if (!datei) return;
+      let text: string;
+      try {
+        text = await datei.text();
+      } catch {
+        melde(t.meldungThemaKaputt);
+        return;
+      }
+      const ergebnis = leseEigenesThema(text, datei.name, builtInSlugs());
+      if (!ergebnis.ok) {
+        const grund = {
+          kaputt: t.meldungThemaKaputt,
+          leer: t.meldungThemaLeer,
+          belegt: t.meldungThemaBelegt,
+        }[ergebnis.fehler];
+        melde(grund);
+        return;
+      }
+      const thema = ergebnis.theme;
+      addCustomTheme(thema);
+      setEigeneThemen((n) => n + 1);
+      // Ein Thema einer anderen Sprache waere sonst unsichtbar.
+      if (thema.language !== NEUTRAL_LANGUAGE && thema.language !== language && LANGUAGES.includes(thema.language)) {
+        setLanguage(thema.language);
+      }
+      setAnsicht('thema');
+      setThemeSlug(thema.slug);
+      melde(t.meldungThemaGeladen(thema.name));
+    },
+    [language, melde, t],
   );
 
   const ideeHinzu = useCallback(() => {
@@ -1072,12 +1118,31 @@ export default function Generator({ sprache }: { sprache: UiSprache }) {
                         : 'text-creme hover:bg-lila'
                     }`}
                   >
-                    <span className="truncate">{th.name}</span>
+                    <span className="truncate">
+                      {th.name}
+                      {th.custom ? <span className="opacity-60"> · {t.eigenesThemaMarke}</span> : null}
+                    </span>
                     <span className="text-[0.62rem] tabular-nums opacity-60">{th.words.length}</span>
                   </button>
                 </li>
               ))}
             </ul>
+            <div className="mt-1">
+              <FTaste onClick={() => themaFeldRef.current?.click()} title={t.titelThemaLaden}>
+                {t.themaLaden}
+              </FTaste>
+              <input
+                ref={themaFeldRef}
+                type="file"
+                accept=".yaml,.yml"
+                className="hidden"
+                aria-label={t.themaLaden}
+                onChange={(e) => {
+                  void themaLaden(e.target.files?.[0]);
+                  e.target.value = '';
+                }}
+              />
+            </div>
           </section>
 
           <section>

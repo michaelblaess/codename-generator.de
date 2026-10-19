@@ -125,6 +125,13 @@ export interface UiTexte {
   meldungImportiert: (neu: number, schonDa: number) => string;
   meldungImportLeer: string;
   meldungImportKaputt: string;
+  themaLaden: string;
+  titelThemaLaden: string;
+  eigenesThemaMarke: string;
+  meldungThemaGeladen: (name: string) => string;
+  meldungThemaKaputt: string;
+  meldungThemaLeer: string;
+  meldungThemaBelegt: string;
   laufschrift: string[];
 }
 
@@ -257,6 +264,14 @@ const de: UiTexte = {
   meldungImportiert: (neu, schonDa) => `${neu} NEU AUF DER MERKLISTE, ${schonDa} SCHON DA`,
   meldungImportLeer: 'IN DER DATEI STEHEN KEINE NAMEN',
   meldungImportKaputt: 'DIE DATEI IST KEINE MERKLISTE',
+  themaLaden: '+ EIGENES THEMA',
+  titelThemaLaden:
+    'Ein eigenes Thema aus einer YAML-Datei laden - dasselbe Format wie ~/.codename-generator/themes/ der Terminalfassung. Die Datei bleibt im Browser und gilt bis zum Schließen der Seite.',
+  eigenesThemaMarke: 'EIGEN',
+  meldungThemaGeladen: (name) => `THEMA ${name.toUpperCase()} GELADEN`,
+  meldungThemaKaputt: 'DIE DATEI IST KEIN THEMA',
+  meldungThemaLeer: 'IM THEMA STEHEN KEINE WÖRTER',
+  meldungThemaBelegt: 'DER DATEINAME GEHÖRT SCHON EINEM MITGELIEFERTEN THEMA',
   laufschrift: [
     'CODENAME GENERATOR',
     'F MERKT EINEN NAMEN, O NIMMT DEIN EIGENES WORT - DIE MERKLISTE BLEIBT IN DEINEM BROWSER',
@@ -399,6 +414,14 @@ const en: UiTexte = {
   meldungImportiert: (neu, schonDa) => `${neu} NEW ON THE SHORTLIST, ${schonDa} ALREADY THERE`,
   meldungImportLeer: 'THE FILE HOLDS NO NAMES',
   meldungImportKaputt: 'THE FILE IS NOT A SHORTLIST',
+  themaLaden: '+ OWN THEME',
+  titelThemaLaden:
+    'Load your own theme from a YAML file - the same format as ~/.codename-generator/themes/ of the terminal version. The file stays in your browser and lasts until you close the page.',
+  eigenesThemaMarke: 'OWN',
+  meldungThemaGeladen: (name) => `THEME ${name.toUpperCase()} LOADED`,
+  meldungThemaKaputt: 'THE FILE IS NOT A THEME',
+  meldungThemaLeer: 'THE THEME HOLDS NO WORDS',
+  meldungThemaBelegt: 'THE FILE NAME BELONGS TO A BUILT-IN THEME',
   laufschrift: [
     'CODENAME GENERATOR',
     'F KEEPS A NAME, O TAKES YOUR OWN WORD - THE SHORTLIST STAYS IN YOUR BROWSER',
